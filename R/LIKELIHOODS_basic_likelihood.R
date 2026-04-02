@@ -1399,6 +1399,8 @@ JHEEM.BASIC.LIKELIHOOD <- R6::R6Class(
                         output = "denominator",
                         drop.single.sim.dimension = T
                     )
+                    # Convert very small denominators to "actual zero"
+                    sim.denominator.data[sim.denominator.data < 0.001] <- 0
                 }
               #  expanded.sim.denominator.data <- expand.array(sim.denominator.data, dimnames(sim.numerator.data))
             }
