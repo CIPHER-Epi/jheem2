@@ -4276,7 +4276,10 @@ JHEEM = R6::R6Class(
                 #                lapply(dynamic.dependee.elements[null.dependee.element.times.mask], private$calculate.element.background.self.times)
                 
                 # union the background.self.times
-                all.background.times = union_sorted_vectors(private$i.element.background.self.times[dynamic.dependee.elements])
+                if (length(dynamic.dependee.elements)==0)
+                    all.background.times = numeric()
+                else
+                    all.background.times = union_sorted_vectors(private$i.element.background.self.times[dynamic.dependee.elements])
                 
                 # value.may.not.apply.times is the setdiff of value times and the background times
                 private$i.top.level.value.may.not.apply.times[[top.level.name]] = setdiff_sorted_vectors(private$i.quantity.value.times[[top.level.name]],
@@ -4327,7 +4330,10 @@ JHEEM = R6::R6Class(
                 #                lapply(dynamic.dependee.elements[null.dependee.element.times.mask], private$calculate.element.background.self.times)
                 
                 # union the background.self.times
-                all.background.times = union_sorted_vectors(private$i.element.background.self.times[dynamic.dependee.elements])
+                if (length(dynamic.dependee.elements)==0)
+                    all.background.times = numeric()
+                else
+                    all.background.times = union_sorted_vectors(private$i.element.background.self.times[dynamic.dependee.elements])
                 
                 # value.may.not.apply.times is the setdiff of value times and the background times
                 private$i.outcome.value.may.not.apply.non.cumulative.times[[outcome.name]] = 
