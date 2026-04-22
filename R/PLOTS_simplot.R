@@ -9,6 +9,7 @@
 #'@param plot.which Should simulation data and calibration data be plotted ('sim.and.data'), or only simulation data ('sim.only')
 #'@param label.function A function to reformat labels. If NULL, will use the first provided simset's "get.labels" property, or will do no transformation if plotting data only.
 #'@param title NULL or a single, non-NA character value. If "location", the location of the first provided simset (if any) will be used for the title.
+#'@param title.suffix NULL or a single, non-NA character value. Something to append to the end of the title that would be generated automatically based on the 'title' argument. Note that this pastes with no space, so add the space in if you want it.
 #'@param data.manager The data.manager from which to draw real-world data for the plots
 #'@param style.manager We are going to have to define this down the road. It's going to govern how we do lines and sizes and colors. For now, just hard code those in, and we'll circle back to it
 #'@param show.data.pull.error Not finding data does not block the plot from showing simulation projections, but if you'd like to see in error when data doesn't appear, set this to TRUE.
@@ -32,6 +33,7 @@ simplot <- function(...,
                     label.function = NULL,
                     plot.year.lag.ratio = F,
                     title = "location",
+                    title.suffix = NULL,
                     n.facet.rows = NULL,
                     append.url = F,
                     data.manager = get.default.data.manager(),
@@ -65,6 +67,7 @@ simplot <- function(...,
                                       label.function=label.function,
                                       plot.year.lag.ratio=plot.year.lag.ratio,
                                       title=title,
+                                      title.suffix=title.suffix,
                                       append.url=append.url,
                                       data.manager=data.manager,
                                       style.manager=style.manager,
@@ -181,6 +184,7 @@ simplot.data.only <- function(outcomes,
                               label.function = NULL,
                               plot.year.lag.ratio = F,
                               title = "location",
+                              title.suffix = NULL,
                               n.facet.rows = NULL,
                               append.url = F,
                               data.manager = get.default.data.manager(),
@@ -206,6 +210,7 @@ simplot.data.only <- function(outcomes,
                                       label.function=label.function,
                                       plot.year.lag.ratio=plot.year.lag.ratio,
                                       title=title,
+                                      title.suffix=title.suffix,
                                       append.url=append.url,
                                       data.manager=data.manager,
                                       style.manager=style.manager,
@@ -248,6 +253,7 @@ prepare.plot <- function(simset.list=NULL,
                          plot.year.lag.ratio = F,
                          label.function = NULL,
                          title="location",
+                         title.suffix=NULL,
                          append.url=F,
                          data.manager = get.default.data.manager(),
                          style.manager=get.default.style.manager(),
@@ -299,6 +305,9 @@ prepare.plot <- function(simset.list=NULL,
     
     if (!is.null(title) && (!is.character(title) || length(title)!=1 || is.na(title)))
         stop(paste0(error.prefix, "'title' must be NULL or a single, non-NA character value"))
+    
+    if (!is.null(title.suffix) && (!is.character(title.suffix) || length(title.suffix)!=1 || is.na(title.suffix)))
+        stop(paste0(error.prefix, "'title.suffix' must be NULL or a single, non-NA character value"))
     
     if (!identical(append.url, T) && !identical(append.url, F))
         stop(paste0(error.prefix, "'append.url' must be either T or F"))
@@ -694,6 +703,8 @@ prepare.plot <- function(simset.list=NULL,
     else if (title=="location")
         plot.title = paste0(get.location.name(simset.list[[1]]$location), " (", simset.list[[1]]$location, ")")
     else plot.title = title
+    if (!is.null(title.suffix))
+        plot.title <- paste0(plot.title, title.suffix)
     # browser()
     return(list(df.sim=df.sim,
                 df.truth=df.truth,
