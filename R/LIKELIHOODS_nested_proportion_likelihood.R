@@ -79,7 +79,7 @@ create.nested.proportion.likelihood.instructions <- function(outcome.for.data,
                                                              n.error.variance.type = "cv", 
                                                              n.error.variance.term.if.estimated = 0.8,
                                                              n.error.variance.type.if.estimated = 'exp.of.variance',
-                                                             weights,
+                                                             weights = list(),
                                                              equalize.weight.by.year = T,
                                                              partitioning.function,
                                                              name = outcome.for.sim) {
@@ -183,7 +183,7 @@ create.nested.proportion.likelihood.instructions.with.included.multiplier <- fun
                                                                                       n.error.variance.type = "cv", # placeholder # same as old "denominator.measurement.error.cv"?
                                                                                       n.error.variance.term.if.estimated = 0.8,
                                                                                       n.error.variance.type.if.estimated = 'exp.of.variance',
-                                                                                      weights,
+                                                                                      weights = list(),
                                                                                       equalize.weight.by.year = T,
                                                                                       partitioning.function,
                                                                                       name = outcome.for.sim) {
@@ -284,7 +284,7 @@ create.time.lagged.comparison.nested.proportion.likelihood.instructions <- funct
                                                                                     n.error.variance.type.if.estimated = 'exp.of.variance',
                                                                                     ratio.cv = NULL,
                                                                                     ratio.correlation = NULL,
-                                                                                    weights,
+                                                                                    weights = list(),
                                                                                     equalize.weight.by.year = T,
                                                                                     partitioning.function,
                                                                                     use.lognormal.approximation = T,
@@ -389,7 +389,7 @@ JHEEM.NESTED.PROPORTION.LIKELIHOOD.INSTRUCTIONS <- R6::R6Class(
                               n.error.variance.type.if.estimated,
                               ratio.cv = NULL,
                               ratio.correlation = NULL,
-                              weights,
+                              weights = list(),
                               equalize.weight.by.year,
                               partitioning.function,
                               use.lognormal.approximation,
@@ -408,7 +408,7 @@ JHEEM.NESTED.PROPORTION.LIKELIHOOD.INSTRUCTIONS <- R6::R6Class(
                 outcome.for.sim = outcome.for.sim,
                 dimensions = dimensions,
                 levels.of.stratification = levels.of.stratification,
-                weights,
+                weights = weights,
                 likelihood.class.generator = JHEEM.NESTED.PROPORTION.LIKELIHOOD,
                 name = name,
                 error.prefix = error.prefix
@@ -1920,7 +1920,7 @@ JHEEM.NESTED.PROPORTION.LIKELIHOOD <- R6::R6Class(
 
             if (any(is.na(mean)) || any(is.na(sigma)))
             {
-                print(paste0("WARNING: The nested proportion likelihood for ", self$name, ", generated NAs in it's mean and/or sigma. Returning a -Inf likelihood to be able to continue"))
+                print(paste0("WARNING: The nested proportion likelihood for ", self$name, ", generated NAs in its mean and/or sigma. Returning a -Inf likelihood to be able to continue"))
                 likelihood = -Inf
             }
             else
