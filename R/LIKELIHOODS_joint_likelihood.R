@@ -164,8 +164,12 @@ JHEEM.JOINT.LIKELIHOOD <- R6::R6Class(
                                  class(instr)[1], "' for '",
                                  instr$name, "'..."))
                 
+                # Need to pass additional weights to custom likelihoods, too!! (4/29/2026)
                 if (is(instr, 'jheem.custom.likelihood.instructions'))
-                    instr$instantiate.likelihood(version = version, location = location, verbose = verbose)
+                    instr$instantiate.likelihood(version = version,
+                                                 location = location,
+                                                 additional.weights = additional.weights,
+                                                 verbose = verbose)
                 else if (is(instr,'jheem.ifelse.likelihood.instructions'))
                     do.ifelse.instantiate.likelihood(instructions = instr,
                                                      version = version,
