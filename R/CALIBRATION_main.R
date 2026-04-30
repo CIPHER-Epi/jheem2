@@ -415,18 +415,19 @@ set.up.calibration <- function(version,
     
     #-- Set up starting values --#
     # For starting values, we need one row for each chain
-    if (calibration.info$is.preliminary)
-    {
-        single.starting.mcmc.parameter.values = initial.model.parameter.values[non.aliased.model.parameter.names]
-        single.starting.mcmc.parameter.values[names(parameter.aliases)] = 1
-        
-        starting.mcmc.parameter.values = t(sapply(1:calibration.info$n.chains, function(chain){
-            single.starting.mcmc.parameter.values[mcmc.parameter.names]
-        }))
-        dim(starting.mcmc.parameter.values) = c(calibration.info$n.chains, length(single.starting.mcmc.parameter.values))
-        dimnames(starting.mcmc.parameter.values) = list(NULL, parameter=mcmc.parameter.names)
-    }
-    else
+    
+    # Begin by using the parameter values from the last sim of the preceding calibration, if exists.
+    single.starting.mcmc.parameter.values = initial.model.parameter.values[non.aliased.model.parameter.names]
+    single.starting.mcmc.parameter.values[names(parameter.aliases)] = 1
+    
+    starting.mcmc.parameter.values = t(sapply(1:calibration.info$n.chains, function(chain){
+        single.starting.mcmc.parameter.values[mcmc.parameter.names]
+    }))
+    dim(starting.mcmc.parameter.values) = c(calibration.info$n.chains, length(single.starting.mcmc.parameter.values))
+    dimnames(starting.mcmc.parameter.values) = list(NULL, parameter=mcmc.parameter.names)
+    
+    # If is not preliminary, we'll be using the mcmc summary's samples for the parameters that had been sampled in the preceding calibration.
+    if (!calibration.info$is.preliminary)
     {
         n.samples = nrow(mcmc.summary$samples)
         if (n.samples < calibration.info$n.chains)
@@ -441,7 +442,15 @@ set.up.calibration <- function(version,
             sample.indices = n.samples - spacing * ((calibration.info$n.chains-1):0)
         }
         
-        starting.mcmc.parameter.values = mcmc.summary$samples[sample.indices,,drop=F]
+        # To seed multiple chains with different values from a sample of the preceding calibration's sampled parameter values,
+        # we'll overwrite the 'starting.mcmc.parameter.values' for parameters that had been sampled.
+        
+        # This might contain some parameters in their aliased form... I guess we'll just drop them if they're not now needed.
+        # Although maybe we should un-alias them first to be sure? Intersect gets rid of them for now.
+        params_previously_sampled <- intersect(dimnames(mcmc.summary$samples)[[2]], mcmc.parameter.names)
+        
+        starting.mcmc.parameter.values[,params_previously_sampled] = mcmc.summary$samples[sample.indices,params_previously_sampled,drop=F]
+        
     }
     
     #-----------------#
