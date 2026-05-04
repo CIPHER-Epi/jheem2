@@ -1,4 +1,7 @@
 
+# To do:
+# Make geom_line not use alpha for the median when summarizing.
+
 #' @title Plot Simulations And Data
 #'@param ... One or more jheem.simulation.set objects and at most one character vector of outcomes (as an alternative to the 'outcomes' argument)
 #'@param corresponding.data.outcomes Specify directly which data outcomes should be plotted against simulation outcomes. Must be NULL or a character vector with outcomes as names; all of those outcomes must be present in either the 'outcomes' argument or in '...'"
@@ -13,6 +16,7 @@
 #'@param data.manager The data.manager from which to draw real-world data for the plots
 #'@param style.manager We are going to have to define this down the road. It's going to govern how we do lines and sizes and colors. For now, just hard code those in, and we'll circle back to it
 #'@param show.data.pull.error Not finding data does not block the plot from showing simulation projections, but if you'd like to see in error when data doesn't appear, set this to TRUE.
+#'@param simset.names A functional argument to help make sure the sims have names when they were plopped in by some other function that used them as variables.
 #'
 #'@details Returns a ggplot object:
 #'  - With one panel for each combination of outcome x facet.by
@@ -39,6 +43,7 @@ simplot <- function(...,
                     data.manager = get.default.data.manager(),
                     style.manager = get.default.style.manager(),
                     show.data.pull.error = F,
+                    simset.names=NULL,
                     debug = F)
 {
     plot.data = plot.data.validation(list(...),
@@ -46,7 +51,8 @@ simplot <- function(...,
                                      outcomes, 
                                      corresponding.data.outcomes, 
                                      plot.which, 
-                                     summary.type)
+                                     summary.type,
+                                     simset.names)
     
     # These values are possibly modified by the plot.data.validation call, so 
     # they need to be extracted from the returned list.
@@ -100,7 +106,8 @@ plot.data.validation = function(simset.args,
                                 outcomes,
                                 corresponding.data.outcomes,
                                 plot.which,
-                                summary.type) {
+                                summary.type,
+                                simset.names=NULL) {
     rv = list()
     
     error.prefix = "Cannot generate simplot: "
@@ -147,7 +154,12 @@ plot.data.validation = function(simset.args,
         stop(paste0(error.prefix, "one or more jheem.simulation.set objects must be supplied"))
     # browser()
     # Add names to simsets
-    rv$simset.list = setNames(simset.args[arg.is.simset], deparsed.substituted.args.simset.args[arg.is.simset])
+    if (!is.null(simset.names))
+        rv$simset.list = setNames(simset.args[arg.is.simset], simset.names)
+    else {
+        rv$simset.list = setNames(simset.args[arg.is.simset], deparsed.substituted.args.simset.args[arg.is.simset])
+    }
+    
     if (is.null(names(simset.args)))
         simset.explicitly.named = rep(F, sum(arg.is.simset))
     else
@@ -314,6 +326,10 @@ prepare.plot <- function(simset.list=NULL,
     
     if (!identical(show.data.pull.error, T) && !identical(show.data.pull.error, F))
         stop(paste0(error.prefix, "'show.data.pull.error' must be either T or F"))
+    
+    # Style manager
+    if (!R6::is.R6(style.manager) || !is(style.manager, "jheem.style.manager"))
+        stop(paste0(error.prefix, "'style.manager' must be a JHEEM style manager"))
     
     # Get the real-world outcome names
     # - eventually we're going to want to pull this from info about the likelihood if the sim notes which likelihood was used on it
