@@ -4599,8 +4599,8 @@ JHEEM = R6::R6Class(
                 private$i.quantity.values[[quantity.name]] = private$i.quantity.values[[quantity.name]][ char.all.times ]
                 private$i.quantity.after.values[[quantity.name]] = private$i.quantity.after.values[[quantity.name]][ char.all.times ]
                 
-                if (any(!vapply(private$i.quantity.after.values[[quantity.name]], is.null, FUN.VALUE = logical(1))))
-                    browser()
+                # if (any(!vapply(private$i.quantity.after.values[[quantity.name]], is.null, FUN.VALUE = logical(1))))
+                #     browser()
                 
                 #-- Fold in foreground if there is any --#
                 foregrounds = private$i.resolved.foregrounds[[quantity.name]]
@@ -4649,8 +4649,8 @@ JHEEM = R6::R6Class(
                                                  error.prefix =  paste0("Error calculating values for model quantity '", quantity.name, "': "))
             }
             
-            if (any(!vapply(private$i.quantity.after.values[[quantity.name]], is.null, FUN.VALUE = logical(1))))
-                browser()
+            # if (any(!vapply(private$i.quantity.after.values[[quantity.name]], is.null, FUN.VALUE = logical(1))))
+            #     browser()
             
             #-- Calculate the value.applies.mask (if needed) --#
             private$calculate.quantity.value.applies.mask(quantity.name)
