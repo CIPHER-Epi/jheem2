@@ -633,7 +633,7 @@ JHEEM.LIKELIHOOD <- R6::R6Class(
 #'
 #' @param total.weight The weight that is applied to all observations in the
 #' @param dimension.values
-#' @param is.recursive Should this weight apply to deeper levels of stratification? For exampel, if F and dimension.values is the default empty list, this weight would only apply to data points that are totals.
+#' @param is.recursive Should this weight apply to deeper levels of stratification? For example, if F and dimension.values is the default empty list, this weight would only apply to data points that are totals.
 #'
 #' @export
 create.likelihood.weights <- function(total.weight = 1,
