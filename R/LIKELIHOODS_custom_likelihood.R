@@ -124,7 +124,23 @@ JHEEM.CUSTOM.LIKELIHOOD <- R6::R6Class(
             
             # We will take the "additional.weights", which are a weights object, and pull out its total weight.
             # This is to simplify the code for users later. But no dimension values can be used with these weights as a result.
-            private$i.weights <- instructions$weights * additional.weights[[1]]$total.weight
+            # browser()
+            if (is(additional.weights[[1]], "jheem.likelihood.weights")) {
+                if (is.null(instructions$weights))
+                    private$i.weights <- additional.weights[[1]]$total.weight
+                else
+                    private$i.weights <- instructions$weights * additional.weights[[1]]$total.weight  
+            }
+                
+            else {
+                if (is.null(instructions$weights))
+                    private$i.weights <- additional.weights[[1]]
+                else
+                    private$i.weights <- instructions$weights * additional.weights[[1]]
+                
+            }
+            if (!is.numeric(private$i.weights) || length(private$i.weights)!=1)
+                stop("Error: custom likelihood didn't have a single numeric weight; contact Andrew")
             
             private$i.compute.function.takes.data = any(names(formals(private$i.compute.function)) == 'data')
             
