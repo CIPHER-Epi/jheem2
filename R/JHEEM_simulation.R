@@ -1201,8 +1201,15 @@ SIMULATION.METADATA = R6::R6Class(
             
             dimension.values[names(dot.dot.dot)] = dot.dot.dot
             
-            if (any(names(dimension.values)=='year'))
+            # Additionally, we must check if the years are within range of "from.year" and "to.year"
+            if (any(names(dimension.values)=='year')){
                 dimension.values$year = as.character(dimension.values$year)
+                
+                if (!is.null(self$from.year) && !is.null(self$to.year))
+                    dimension.values$year <- intersect(dimension.values$year, as.character(self$from.year:self$to.year))
+            }
+            # if (length(dimension.values[["year"]])==0)
+            #     dimension.values <- dimension.values[names(dimension.values)!="year"]
             
             dimension.values
         },
@@ -1773,6 +1780,11 @@ JHEEM.SIMULATION.SET = R6::R6Class(
             # 
             # if (!drop.single.sim.dimension || self$n.sim > 1)
             #     keep.dimensions = union(keep.dimensions, 'sim')
+            
+            # We need to check if we have lost all our years when the dimension values were processed
+            # (for example, if the years were all outside our range)
+            if (any(sapply(dimension.values, length)==0))
+                return(NULL)
             
             rv = lapply(outcomes, function(outcome){
                 scale = self$outcome.metadata[[outcome]]$scale
