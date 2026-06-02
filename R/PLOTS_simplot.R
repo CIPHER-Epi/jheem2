@@ -591,6 +591,8 @@ prepare.plot <- function(simset.list=NULL,
                 df.sim = rbind(df.sim, one.df.sim.this.outcome)
             }
         }
+        if (is.null(df.sim))
+            stop(paste0(error.prefix, "No simulation data found (check dimension values, perhaps?)"))
         
         # Pivot wider to convert column "metric" to columns "value.mean", "value.lower", "value.upper" or such
         if (summary.type != 'individual.simulation') {
