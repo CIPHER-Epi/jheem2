@@ -1997,8 +1997,8 @@ JHEEM.NESTED.PROPORTION.LIKELIHOOD <- R6::R6Class(
                         return(NULL)
                         # stop(paste0(error.prefix, "cannot determine how much of ", location, " ", private$i.denominator.outcome.for.data, " comes from '", loc,
                         #             "' because the overlap is not on the level of ", minimum.geographic.resolution.type,
-                        #             ". Consider either chaning the 'minimum.geographic.resolution.type' to one that accounts for the overlap or raise the 'maximum.locations.for.type' so that this check is not needed."))
-                    denom.totals <- data.manager$pull(outcome = private$i.denominator.outcome.for.data, keep.dimensions = "year", dimension.values = list(location = overlapping.contained.locs))
+                        #             ". Consider either changing the 'minimum.geographic.resolution.type' to one that accounts for the overlap or raise the 'maximum.locations.for.type' so that this check is not needed."))
+                    denom.totals <- data.manager$pull(outcome = private$i.outcome.for.n.multipliers, keep.dimensions = "year", dimension.values = list(location = overlapping.contained.locs))
                     
                     if (is.null(denom.totals)) {
                         return(NULL)
@@ -2014,6 +2014,10 @@ JHEEM.NESTED.PROPORTION.LIKELIHOOD <- R6::R6Class(
 
                 return(locations.this.type[names(sort(loc.denominators, decreasing = T))][1:min(maximum.locations.per.type, length(loc.denominators))])
             })
+            # Unresolved bug (7/1/2026): the "locations.list" could have <NA> elements.
+            # For example, the data pull originally used the denominator outcome,
+            # but in some cases, there isn't county-level data for that outcome,
+            # and the n-multipliers outcome is the only basis for comparison.
             
             locations.vector = unlist(locations.list)
             iterated.location.types = unlist(lapply(1:length(location.types), function(i){
