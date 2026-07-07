@@ -11,6 +11,7 @@
 #'@param dimension.values.post.mapping How to subset data in the form it will take after mappings have been applied to align sim and data ontologies. A list.
 #'@param plot.which Should simulation data and calibration data be plotted ('sim.and.data'), or only simulation data ('sim.only')
 #'@param label.function A function to reformat labels. If NULL, will use the first provided simset's "get.labels" property, or will do no transformation if plotting data only.
+#'@param data.locations Specifies locations for which to pull data. May be 1. NULL, in which case data locations will be inferred from the simsets' likelihoods, 2. a character vector of locations, or 3. a list of character vectors with outcomes as list names. For 3., outcomes not included will have their data locations inferred as in 1.
 #'@param title NULL or a single, non-NA character value. If "location", the location of the first provided simset (if any) will be used for the title.
 #'@param title.suffix NULL or a single, non-NA character value. Something to append to the end of the title that would be generated automatically based on the 'title' argument. Note that this pastes with no space, so add the space in if you want it.
 #'@param data.manager The data.manager from which to draw real-world data for the plots
@@ -34,6 +35,7 @@ simplot <- function(...,
                     target.ontology = NULL,
                     plot.which = c('sim.and.data', 'sim.only')[1],
                     summary.type = c('individual.simulation', 'mean.and.interval', 'median.and.interval')[1],
+                    data.locations = NULL,
                     label.function = NULL,
                     plot.year.lag.ratio = F,
                     title = "location",
@@ -70,6 +72,7 @@ simplot <- function(...,
                                       target.ontology=target.ontology,
                                       plot.which=plot.which,
                                       summary.type=summary.type,
+                                      data.locations=data.locations,
                                       label.function=label.function,
                                       plot.year.lag.ratio=plot.year.lag.ratio,
                                       title=title,
@@ -183,8 +186,7 @@ plot.data.validation = function(simset.args,
 
 #' @title Simplot Data Only
 #'@inheritParams simplot
-#'@param A character vector of which simulation outcomes to plot. Note: This should be the names of the outcomes in the provided data manager, NOT in the simulations.
-#'@param title NULL or a single, non-NA character value. If "location", the first location provided in "locations" will be used for the title.
+#'@param locations A character vector of locations for which to pull data.
 #'@export
 simplot.data.only <- function(outcomes,
                               locations,
@@ -207,6 +209,8 @@ simplot.data.only <- function(outcomes,
     error.prefix = "Cannot generate simplot: "
     
     #@ validate locations
+    if (!is.character(locations) | length(locations)<1 | any(is.na(locations)))
+        stop(paste0(error.prefix, "'locations' must be a non-empty character vector without any NAs"))
     
     prepared.plot.data = prepare.plot(simset.list=NULL,
                                       outcomes=outcomes,
@@ -219,6 +223,7 @@ simplot.data.only <- function(outcomes,
                                       target.ontology=target.ontology,
                                       plot.which='data.only',
                                       summary.type=summary.type,
+                                      data.locations=NULL,
                                       label.function=label.function,
                                       plot.year.lag.ratio=plot.year.lag.ratio,
                                       title=title,
@@ -262,6 +267,7 @@ prepare.plot <- function(simset.list=NULL,
                          target.ontology = NULL,
                          plot.which = c('sim.and.data', 'sim.only', 'data.only')[1],
                          summary.type = c('individual.simulation', 'mean.and.interval', 'median.and.interval')[1],
+                         data.locations = NULL,
                          plot.year.lag.ratio = F,
                          label.function = NULL,
                          title="location",
@@ -331,6 +337,22 @@ prepare.plot <- function(simset.list=NULL,
     if (!R6::is.R6(style.manager) || !is(style.manager, "jheem.style.manager"))
         stop(paste0(error.prefix, "'style.manager' must be a JHEEM style manager"))
     
+    # data.locations is either 1) NULL, 2) an unnamed list with one character vector, or 3) a list of characters with outcomes as names
+    if (!is.null(data.locations)) {
+        if (is.character(data.locations)) {
+            if (length(data.locations)<1 || any(is.na(data.locations)))
+                stop(paste0(error.prefix, "'data.locations' must be either 1) NULL, 2) a non-empty character vector with no NAs, or 3) a list of non-empty character vectors with no NAs with outcomes as list names"))
+        }
+        else if (is.list(data.locations)) {
+            if (is.null(names(data.locations)) ||
+                !all(names(data.locations) %in% outcomes) ||
+                any(sapply(data.locations, function(x) {!is.character(x[[1]]) || length(x[[1]])<1 || any(is.na(x[[1]]))})))
+                stop(paste0(error.prefix, "'data.locations' must be either 1) NULL, 2) a non-empty character vector with no NAs, or 3) a list of non-empty character vectors with no NAs with outcomes as list names"))
+        }
+        else
+            stop(paste0(error.prefix, "'data.locations' must be either 1) NULL, 2) a non-empty character vector with no NAs, or 3) a list of non-empty character vectors with no NAs with outcomes as list names"))
+    }
+    
     # Get the real-world outcome names
     # - eventually we're going to want to pull this from info about the likelihood if the sim notes which likelihood was used on it
     # - what we'll do now will be the back-up to above
@@ -393,7 +415,12 @@ prepare.plot <- function(simset.list=NULL,
     if (plot.which=='data.only') outcome.locations = locations
     else {
         outcome.locations = lapply(outcomes, function(outcome) {
-            locations.this.outcome = unique(unlist(lapply(simset.list, function(simset) {
+            if (outcome %in% names(data.locations))
+                locations.this.outcome = data.locations[[outcome]]
+            else if (!is.null(data.locations))
+                locations.this.outcome = data.locations[[1]]
+            else
+                locations.this.outcome = unique(unlist(lapply(simset.list, function(simset) {
                 simset$outcome.location.mapping$get.observed.locations(outcome, simset$location)
             })))
         })
@@ -522,6 +549,7 @@ prepare.plot <- function(simset.list=NULL,
                 names(df.truth)[names(df.truth)==facet.by[i]] = paste0("facet.by", i)
             }
         
+        # Can bug out if multiple outcomes have the same "outcome display name" set in the specification
         df.truth$outcome.display.name <- factor(df.truth$outcome.display.name, levels = sapply(outcome.metadata.list, function(outcome) {outcome$display.name}))
         # if there is no 'stratum' because no split, then we should fill it with ""
         if (!('stratum' %in% names(df.truth))) df.truth['stratum'] = rep('', nrow(df.truth))
