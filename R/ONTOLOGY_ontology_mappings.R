@@ -1448,6 +1448,21 @@ find.ontology.mapping.for.dimensions <- function(from.ontology,
                                                               allow.incomplete.span.of.infinite.age.range = T,
                                                               allow.partial.to.parsing = !to.dimensions.are.complete['age'],
                                                               require.map.all.to = to.dimensions.are.complete['age'])
+                        # NEW: if we couldn't map all the way to to.ontology's age values directly,
+                        # but we're in a two-way search, try aggregating just to the coarsest partition
+                        # shared by from.ontology and to.ontology -- the two-way fallback below will then
+                        # look for a way to bring to.ontology the rest of the way to that same partition
+                        if (is.null(mapping) && (get.two.way.alignment || is.for.two.way))
+                        {
+                            common.age.values = get.common.age.refinement.values(from.ontology[['age']], to.ontology[['age']])
+                            
+                            if (!is.null(common.age.values))
+                                mapping = create.age.ontology.mapping(from.values=from.ontology[['age']],
+                                                                      to.values=common.age.values,
+                                                                      allow.incomplete.span.of.infinite.age.range = T,
+                                                                      allow.partial.to.parsing = F,
+                                                                      require.map.all.to = T)
+                        }
                         
                         try.modification = !is.null(mapping)
                     }
@@ -3756,4 +3771,39 @@ initial.check.can.apply <- function(mapping,
     })
     
     all(required.from.values.are.present)
+}
+
+# Given two sets of age bracket labels that each fully/contiguously partition the age range,
+# find the labels for the coarsest partition that BOTH from.values and to.values can be
+# aggregated up to (the "meet" of the two partitions), computed by intersecting their
+# boundary points. Returns NULL if no useful (strictly coarser) common partition exists.
+get.common.age.refinement.values <- function(from.values, to.values)
+{
+    from.bounds = parse.age.strata.names(from.values)
+    to.bounds = parse.age.strata.names(to.values)
+    
+    if (is.null(from.bounds) || is.null(to.bounds))
+        return (NULL)
+    
+    from.edges = sort(unique(c(from.bounds$lower, from.bounds$upper)))
+    to.edges = sort(unique(c(to.bounds$lower, to.bounds$upper)))
+    
+    common.edges = sort(intersect(from.edges, to.edges))
+    
+    # Need at least one bracket, and it must be a genuine (strict) coarsening of from.values,
+    # or we'd loop without making progress
+    if (length(common.edges) < 2 || length(common.edges) >= length(from.edges))
+        return (NULL)
+    
+    label.suffix = sub("^[0-9+-]+", "", from.values[1])
+    
+    sapply(1:(length(common.edges)-1), function(i){
+        lower = common.edges[i]
+        upper = common.edges[i+1]
+        
+        if (is.infinite(upper))
+            paste0(lower, "+", label.suffix)
+        else
+            paste0(lower, "-", upper-1, label.suffix)
+    })
 }
