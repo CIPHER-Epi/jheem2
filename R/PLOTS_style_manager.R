@@ -283,6 +283,14 @@ JHEEM.STYLE.MANAGER = R6::R6Class(
                 private$i.linewidth.slope
             else
                 stop("Cannot overwrite a style.manager's 'linewidth.slope' - it is read only")
+        },
+        
+        shade.increment = function(value)
+        {
+            if (missing(value))
+                private$i.shade.increment
+            else
+                stop("Cannot overwrite a style.manager's 'shade.increment' - it is read only")
         }
     ),
     
