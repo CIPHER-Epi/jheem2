@@ -1452,7 +1452,7 @@ find.ontology.mapping.for.dimensions <- function(from.ontology,
                         # but we're in a two-way search, try aggregating just to the coarsest partition
                         # shared by from.ontology and to.ontology -- the two-way fallback below will then
                         # look for a way to bring to.ontology the rest of the way to that same partition
-                        if (is.null(mapping) && (get.two.way.alignment || is.for.two.way))
+                        if (is.null(mapping) && (get.two.way.alignment && !is.for.two.way)) # CHECK THIS
                         {
                             common.age.values = get.common.age.refinement.values(from.ontology[['age']], to.ontology[['age']])
                             
