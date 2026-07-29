@@ -358,8 +358,8 @@ RObject do_execute_ontology_mapping(List src_dim_names,
     //----------------------------------------------//
     
     // temp variable only if we are applying
-    // int n_for_untouched = (do_apply) * n_dst; // the bad one!
-    bool dst_is_untouched[n_for_untouched];
+    int n_for_untouched = (do_apply) * n_dst;
+    // bool dst_is_untouched[n_for_untouched];  // the bad one!
     std::vector<bool> dst_is_untouched(n_for_untouched);
     for (int i=0; i<n_for_untouched; i++)
         dst_is_untouched[i] = true;
