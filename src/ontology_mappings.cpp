@@ -1,9 +1,9 @@
 // CODE TO SPEED UP ONTOLOGY //
-    
-    
-    #include <Rcpp.h>
-    #include <vector>
-    using namespace Rcpp;
+
+
+#include <Rcpp.h>
+#include <vector>
+using namespace Rcpp;
 
 
 RObject do_execute_ontology_mapping(List src_dim_names,
@@ -19,39 +19,39 @@ RObject do_execute_ontology_mapping(List src_dim_names,
     bool get_indices = !do_apply && !get_matrix;
     
     //----------------------------//
-        //----------------------------//
-        //-- PROCESS THE ATTRIBUTES --//
-        //----------------------------//
-        //----------------------------//
-        
-        //-- Process dst attributes --//
-        if (dst_dim_names.attr("names")==R_NilValue)
-            return (R_NilValue);
+    //----------------------------//
+    //-- PROCESS THE ATTRIBUTES --//
+    //----------------------------//
+    //----------------------------//
+    
+    //-- Process dst attributes --//
+    if (dst_dim_names.attr("names")==R_NilValue)
+        return (R_NilValue);
     CharacterVector dst_dimensions = dst_dim_names.names();
     
     int n_dst_dims = dst_dimensions.length();
     
-    std::vector<int> dst_dims(n_dst_dims);
+    int dst_dims[n_dst_dims];
     CharacterVector tmp;
     for (int j=0; j<n_dst_dims; j++)
         dst_dims[j] = ((CharacterVector) dst_dim_names[j]).length();
     
     //-- Process src attributes --//
-        if (src_dim_names.attr("names")==R_NilValue)
-            return (R_NilValue);
+    if (src_dim_names.attr("names")==R_NilValue)
+        return (R_NilValue);
     CharacterVector src_dimensions = src_dim_names.names();
     
     int n_src_dims = src_dimensions.length();
     
-    std::vector<int> src_dims(n_src_dims);
+    int src_dims[n_src_dims];
     for (int j=0; j<n_src_dims; j++)
         src_dims[j] = ((CharacterVector) src_dim_names[j]).length();
     
     
     //-- Process from_values --//
-        
-        if (from_values.attr("dimnames")==R_NilValue)
-            return (R_NilValue);
+    
+    if (from_values.attr("dimnames")==R_NilValue)
+        return (R_NilValue);
     List from_dim_names = from_values.attr("dimnames");
     if (from_dim_names.length()<2 || from_dim_names[1]==R_NilValue)
         return (R_NilValue);
@@ -62,13 +62,13 @@ RObject do_execute_ontology_mapping(List src_dim_names,
     int n_from_dims = from_dimensions.length();
     int n_non_from_dims = n_src_dims - n_from_dims;
     
-    std::vector<int> from_dim_indices(n_from_dims);
-    std::vector<int> non_from_dim_indices(n_non_from_dims);
+    int from_dim_indices[n_from_dims];
+    int non_from_dim_indices[n_non_from_dims];
     
-    std::vector<int> non_from_dims(n_non_from_dims);
+    int non_from_dims[n_non_from_dims];
     int n_non_from = 1;
-    std::vector<int> n_before_non_from(n_non_from_dims);
-    std::vector<int> n_before_from(n_from_dims);
+    int n_before_non_from[n_non_from_dims];
+    int n_before_from[n_from_dims];
     
     int non_from_dim_index = 0;
     int n_before = 1;
@@ -108,15 +108,15 @@ RObject do_execute_ontology_mapping(List src_dim_names,
     int n_values = from_dims[0];
     
     //-- Process to_values --//
-        
-        if (to_values.attr("dimnames")==R_NilValue)
-            return (R_NilValue);
+    
+    if (to_values.attr("dimnames")==R_NilValue)
+        return (R_NilValue);
     List to_dim_names = to_values.attr("dimnames");
     if (to_dim_names.length()<2 || to_dim_names[1]==R_NilValue)
         return (R_NilValue);
     
     CharacterVector to_dimensions = (CharacterVector) to_dim_names[1];
-    std::vector<int> which_to_dimensions_to_use(to_dimensions.length());
+    int which_to_dimensions_to_use[to_dimensions.length()];
     
     // Calculate the number of 'to' dimensions actually in the array
     //  We are allowed to ignore omitted to dimensions (as long as at least one is included)
@@ -139,12 +139,12 @@ RObject do_execute_ontology_mapping(List src_dim_names,
     
     int n_non_to_dims = n_dst_dims - n_to_dims;
     
-    std::vector<int> to_dim_indices(n_to_dims);
-    std::vector<int> non_to_dim_indices(n_non_to_dims+1);
+    int to_dim_indices[n_to_dims];
+    int non_to_dim_indices[n_non_to_dims+1];
     
-    std::vector<int> non_to_dims(n_non_to_dims);
-    std::vector<int> n_before_non_to(n_non_to_dims);
-    std::vector<int> n_before_to(n_to_dims);
+    int non_to_dims[n_non_to_dims];
+    int n_before_non_to[n_non_to_dims];
+    int n_before_to[n_to_dims];
     
     int non_to_dim_index = 0;
     n_before = 1;
@@ -181,21 +181,21 @@ RObject do_execute_ontology_mapping(List src_dim_names,
         return (R_NilValue);
     
     //----------------------------------//
-        //----------------------------------//
-        //-- SET UP THE DIMENSION INDICES --//
-        //----------------------------------//
-        //----------------------------------//
-        
-        int n_dst = 1;
+    //----------------------------------//
+    //-- SET UP THE DIMENSION INDICES --//
+    //----------------------------------//
+    //----------------------------------//
+    
+    int n_dst = 1;
     for (int i=0; i<n_dst_dims; i++)
         n_dst *= dst_dims[i];
     
     // Map from the 'from_values' to the src dimension values
     //  (ie parse the integer value for each from_dim_values)
-    std::vector<std::vector<int>> from_dim_values(n_values, std::vector<int>(n_from_dims));
+    int from_dim_values[n_values][n_from_dims];
     int n_mapped_from = 0;
     CharacterVector dim_values;
-    std::vector<int> mapped_from_values_indices(n_values);
+    int mapped_from_values_indices[n_values];
     
     bool all_dims_mapped;
     for (int i=0; i<n_values; i++)
@@ -228,9 +228,9 @@ RObject do_execute_ontology_mapping(List src_dim_names,
     }
     
     
-    std::vector<std::vector<int>> to_dim_values(n_mapped_from, std::vector<int>(n_to_dims));
+    int to_dim_values[n_mapped_from][n_to_dims];
     int n_mapped = 0;
-    std::vector<int> mapped_to_values_indices(n_mapped_from);
+    int mapped_to_values_indices[n_mapped_from];
     int j_in_values;
     
     for (int i=0; i<n_mapped_from; i++)
@@ -255,96 +255,96 @@ RObject do_execute_ontology_mapping(List src_dim_names,
         }
         
         // if we didn't find a match, we will just ignore this row in from_values/to_values
-            if (all_dims_mapped)
+        if (all_dims_mapped)
+        {
+            mapped_to_values_indices[n_mapped] = i;
+            n_mapped++;
+        }
+    }
+    
+    //   if (n_mapped==0) //there is nothing to map - no changes to make to dst
+    //        return (dst);
+    
+    
+    // cut out any from values that were not used
+    for (int i=0; i<n_mapped; i++)
+    {
+        for (int j=0; j<n_from_dims; j++)
+            from_dim_values[i][j] = from_dim_values[ mapped_to_values_indices[i] ][j];
+    }
+    
+    int max_non_from_dim=0;
+    for (int j=0; j<n_non_from_dims; j++)
+    {
+        if (non_from_dims[j] > max_non_from_dim)
+            max_non_from_dim = non_from_dims[j];
+    }
+    
+    
+    // Map non_from to non_to dimensions
+    int non_to_to_non_from_dims[n_non_to_dims];
+    
+    for (int j=0; j<n_non_to_dims; j++)
+    {
+        non_to_to_non_from_dims[j] = -1;
+        for (int k=0; k<n_non_from_dims; k++)
+        {
+            if (dst_dimensions[ non_to_dim_indices[j] ] == src_dimensions[ non_from_dim_indices[k] ])
             {
-                mapped_to_values_indices[n_mapped] = i;
-                n_mapped++;
+                non_to_to_non_from_dims[j] = k;
+                break;
             }
         }
         
-        //   if (n_mapped==0) //there is nothing to map - no changes to make to dst
-        //        return (dst);
-        
-        
-        // cut out any from values that were not used
-        for (int i=0; i<n_mapped; i++)
+        if (non_to_to_non_from_dims[j]==-1)
+            return (R_NilValue);
+    }
+    
+    // Map non_from to non_to dimension values
+    int non_from_to_non_to_dim_values[n_non_to_dims][max_non_from_dim];
+    int included_non_from_dim_values[n_non_from_dims][max_non_from_dim];
+    int n_included_for_non_from_dim[n_non_from_dims];
+    for (int j=0; j<n_non_from_dims; j++)
+    {
+        n_included_for_non_from_dim[j] = non_from_dims[j];
+        for (int k=0; k<non_from_dims[j]; k++)
         {
-            for (int j=0; j<n_from_dims; j++)
-                from_dim_values[i][j] = from_dim_values[ mapped_to_values_indices[i] ][j];
+            included_non_from_dim_values[j][k] = k;
         }
+    }
+    // Note: a source dimension value is "included" if it is present in dst - otherwise it is ignored
+    
+    CharacterVector src_values;
+    CharacterVector dst_values;
+    for (int i=0; i<n_non_to_dims; i++)
+    {
+        int non_from_d = non_to_to_non_from_dims[i];
+        src_values = (CharacterVector) src_dim_names[non_from_dim_indices[non_from_d]];
+        dst_values = (CharacterVector) dst_dim_names[non_to_dim_indices[i]];
         
-        int max_non_from_dim=0;
-        for (int j=0; j<n_non_from_dims; j++)
+        n_included_for_non_from_dim[non_from_d] = 0;
+        
+        for (int j=0; j<src_values.length(); j++)
         {
-            if (non_from_dims[j] > max_non_from_dim)
-                max_non_from_dim = non_from_dims[j];
-        }
-        
-        
-        // Map non_from to non_to dimensions
-        std::vector<int> non_to_to_non_from_dims(n_non_to_dims);
-        
-        for (int j=0; j<n_non_to_dims; j++)
-        {
-            non_to_to_non_from_dims[j] = -1;
-            for (int k=0; k<n_non_from_dims; k++)
+            non_from_to_non_to_dim_values[i][j] = -1;
+            for (int k=0; k<dst_values.length(); k++)
             {
-                if (dst_dimensions[ non_to_dim_indices[j] ] == src_dimensions[ non_from_dim_indices[k] ])
+                if (src_values[j] == dst_values[k])
                 {
-                    non_to_to_non_from_dims[j] = k;
+                    non_from_to_non_to_dim_values[i][j] = k;
                     break;
                 }
             }
             
-            if (non_to_to_non_from_dims[j]==-1)
-                return (R_NilValue);
-        }
-        
-        // Map non_from to non_to dimension values
-        std::vector<std::vector<int>> non_from_to_non_to_dim_values(n_non_to_dims, std::vector<int>(max_non_from_dim));
-        std::vector<std::vector<int>> included_non_from_dim_values(n_non_from_dims, std::vector<int>(max_non_from_dim));
-        std::vector<int> n_included_for_non_from_dim(n_non_from_dims);
-        for (int j=0; j<n_non_from_dims; j++)
-        {
-            n_included_for_non_from_dim[j] = non_from_dims[j];
-            for (int k=0; k<non_from_dims[j]; k++)
+            if (non_from_to_non_to_dim_values[i][j] != -1)
             {
-                included_non_from_dim_values[j][k] = k;
+                included_non_from_dim_values[non_from_d][ n_included_for_non_from_dim[non_from_d] ] = j;
+                n_included_for_non_from_dim[non_from_d]++;
             }
         }
-        // Note: a source dimension value is "included" if it is present in dst - otherwise it is ignored
         
-        CharacterVector src_values;
-        CharacterVector dst_values;
-        for (int i=0; i<n_non_to_dims; i++)
-        {
-            int non_from_d = non_to_to_non_from_dims[i];
-            src_values = (CharacterVector) src_dim_names[non_from_dim_indices[non_from_d]];
-            dst_values = (CharacterVector) dst_dim_names[non_to_dim_indices[i]];
-            
-            n_included_for_non_from_dim[non_from_d] = 0;
-            
-            for (int j=0; j<src_values.length(); j++)
-            {
-                non_from_to_non_to_dim_values[i][j] = -1;
-                for (int k=0; k<dst_values.length(); k++)
-                {
-                    if (src_values[j] == dst_values[k])
-                    {
-                        non_from_to_non_to_dim_values[i][j] = k;
-                        break;
-                    }
-                }
-                
-                if (non_from_to_non_to_dim_values[i][j] != -1)
-                {
-                    included_non_from_dim_values[non_from_d][ n_included_for_non_from_dim[non_from_d] ] = j;
-                    n_included_for_non_from_dim[non_from_d]++;
-                }
-            }
-            
-            if (n_included_for_non_from_dim[non_from_d]==0)
-                return(R_NilValue); //we don't have any src dimension values present in dst for the dimension
+        if (n_included_for_non_from_dim[non_from_d]==0)
+            return(R_NilValue); //we don't have any src dimension values present in dst for the dimension
     }
     
     int n_included_non_from = 1;
@@ -358,14 +358,15 @@ RObject do_execute_ontology_mapping(List src_dim_names,
     //----------------------------------------------//
     
     // temp variable only if we are applying
-    int n_for_untouched = (do_apply) * n_dst;
+    // int n_for_untouched = (do_apply) * n_dst; // the bad one!
+    bool dst_is_untouched[n_for_untouched];
     std::vector<bool> dst_is_untouched(n_for_untouched);
     for (int i=0; i<n_for_untouched; i++)
         dst_is_untouched[i] = true;
     
     // temp variables only if we are getting indices
     
-    std::vector<int> n_mapped_to_dst((get_indices) * n_dst);
+    int n_mapped_to_dst[(get_indices) * n_dst];
     if (get_indices)
     {
         for (int i=0; i<n_dst; i++)
@@ -374,16 +375,16 @@ RObject do_execute_ontology_mapping(List src_dim_names,
     
     
     int n_for_indices = n_included_non_from * n_mapped;
-    std::vector<int> dst_index_for_indices((get_indices) * n_for_indices);
-    std::vector<int> src_index_for_indices((get_indices) * n_for_indices);
+    int dst_index_for_indices[(get_indices) * n_for_indices];
+    int src_index_for_indices[(get_indices) * n_for_indices];
     int index_for_indices = 0;
     
     // temp variables for the iteration
-    std::vector<int> non_from_dim_value_indices(n_non_from_dims);
+    int non_from_dim_value_indices[n_non_from_dims];
     for (int j=0; j<n_non_from_dims; j++)
         non_from_dim_value_indices[j] = 0;
     
-    std::vector<int> non_from_dim_values(n_non_from_dims);
+    int non_from_dim_values[n_non_from_dims];
     for (int j=0; j<n_non_from_dims; j++)
         non_from_dim_values[j] = included_non_from_dim_values[j][0];
     
