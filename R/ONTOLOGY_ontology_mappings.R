@@ -522,7 +522,6 @@ do.get.mappings.to.align.ontologies <- function(ontology.1,
     # check.dim.names.valid(ontology.2,
     #                       variable.name.for.error = 'ontology.2',
     #                       allow.duplicate.values.across.dimensions = T)
-    
     ontology.1 = derive.ontology(ontology.1, var.name.for.error = "'ontology.1'", error.prefix = "Error getting aligning ontology mappings: ")
     ontology.2 = derive.ontology(ontology.2, var.name.for.error = "'ontology.2'", error.prefix = "Error getting aligning ontology mappings: ")
     
@@ -1200,7 +1199,7 @@ find.ontology.mapping <- function(from.ontology,
                                                                      get.two.way.alignment = get.two.way.alignment,
                                                                      allow.non.overlapping.incomplete.dimensions = allow.non.overlapping.incomplete.dimensions,
                                                                      try.allowing.non.overlapping.incomplete.dimensions = F,
-                                                                     is.for.two.way = get.two.way.alignment,
+                                                                     is.for.two.way = get.two.way.alignment, # is.for.two.way will always be true for get.aligning.ontologies, but get.two.way.alignment will get flipped FALSE when finding the reverse mapping.
                                                                      used.mappings = list(),
                                                                      mappings.to.try = mappings.to.try,
                                                                      orig.mappings.to.try = mappings.to.try,
@@ -1345,7 +1344,6 @@ find.ontology.mapping.for.dimensions <- function(from.ontology,
 )
 {
     error.prefix = "Error getting ontology mapping: "
-    
     # We are done (successfully) iff
     # 1) to.dim.names contains only required.dimensions and no others
     # 2) from.dim.names contains only required dimensions and no others
@@ -1407,7 +1405,7 @@ find.ontology.mapping.for.dimensions <- function(from.ontology,
     
     # Let's work it out
     dimensions.out.of.alignment = from.dimensions[from.out.of.alignment.mask]
-    
+
     for (d in union(dimensions.out.of.alignment, from.dimensions)) #put the out of alignment dimensions first
     {
         #for (try.index in 1:length(mappings.to.try$viable.mappings[[d]]))
@@ -1452,7 +1450,7 @@ find.ontology.mapping.for.dimensions <- function(from.ontology,
                         # but we're in a two-way search, try aggregating just to the coarsest partition
                         # shared by from.ontology and to.ontology -- the two-way fallback below will then
                         # look for a way to bring to.ontology the rest of the way to that same partition
-                        if (is.null(mapping) && (get.two.way.alignment && !is.for.two.way)) # CHECK THIS
+                        if (is.null(mapping) && get.two.way.alignment)
                         {
                             common.age.values = get.common.age.refinement.values(from.ontology[['age']], to.ontology[['age']])
                             
