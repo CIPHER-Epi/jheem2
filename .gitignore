@@ -10,3 +10,5 @@ jheem2.Rproj
 debug/
 debug_sim/
 src/*.dll
+src/*.o
+src/*.so
