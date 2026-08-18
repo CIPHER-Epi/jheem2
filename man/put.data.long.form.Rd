@@ -18,6 +18,7 @@ put.data.long.form(
   details,
   allow.na.to.overwrite = F,
   dimension.values.to.distribute = list(),
+  allow.distributing.on.proportion.scale = F,
   round.distributed.dimension.values = T,
   debug = F,
   printouts = F

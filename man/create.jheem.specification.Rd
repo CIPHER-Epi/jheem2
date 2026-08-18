@@ -17,6 +17,7 @@ create.jheem.specification(
   compartments.for.infected.only = list(),
   compartments.for.uninfected.only = list(),
   compartments.for.infected.and.uninfected = list(),
+  compartments.for.outcomes = list(),
   age.endpoints = NULL,
   compartment.value.aliases = list(),
   order.locations.by.outcomes = NULL,
@@ -43,7 +44,7 @@ create.jheem.specification(
 
 \item{do.not.inherit.components.with.tags}{A vector of tags for which core components (transmission, natality, mortality, transitions, aging) should NOT be inherited from ancestor specifications}
 
-\item{compartments.for.infected.only, compartments.for.uninfected.only, compartments.for.infected.and.uninfected}{Named lists of character vectors F@specifying the compartments for uninfected and infected groups, or compartments shared by both. The names of the lists represent dimensions, and the values the compartments for each dimension. Compartments can either be string referencing the compartments themselves, or strings representing aliases passed to compartment.value.aliases}
+\item{compartments.for.infected.only, compartments.for.uninfected.only, compartments.for.infected.and.uninfected, compartments.for.outcomes}{Named lists of character vectors F@specifying the compartments for uninfected and infected groups, compartments shared by both, or additional compartments that show in the outcomes. The names of the lists represent dimensions, and the values the compartments for each dimension. Compartments can either be string referencing the compartments themselves, or strings representing aliases passed to compartment.value.aliases}
 
 \item{age.endpoints}{Optional. A numeric vector (with at least two elements) giving the endpoints of the age brackets to use for the 'age' dimension. Results in length(age.endpoints)-1 different brackets, where the first bracket spans age.endpoints[1] (inclusive) to age.endpoints[2] (exclusive), the second bracket spans age.endpoints[2] to age.endpoints[3], etc}
 

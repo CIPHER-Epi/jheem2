@@ -10,7 +10,8 @@
   outcomes,
   corresponding.data.outcomes,
   plot.which,
-  summary.type
+  summary.type,
+  simset.names = NULL
 )
 }
 \arguments{

@@ -16,14 +16,17 @@ simplot(
   plot.which = c("sim.and.data", "sim.only")[1],
   summary.type = c("individual.simulation", "mean.and.interval",
     "median.and.interval")[1],
+  data.locations = NULL,
   label.function = NULL,
   plot.year.lag.ratio = F,
   title = "location",
+  title.suffix = NULL,
   n.facet.rows = NULL,
   append.url = F,
   data.manager = get.default.data.manager(),
   style.manager = get.default.style.manager(),
   show.data.pull.error = F,
+  simset.names = NULL,
   debug = F
 )
 }
@@ -42,15 +45,21 @@ simplot(
 
 \item{plot.which}{Should simulation data and calibration data be plotted ('sim.and.data'), or only simulation data ('sim.only')}
 
+\item{data.locations}{Specifies locations for which to pull data. May be 1. NULL, in which case data locations will be inferred from the simsets' likelihoods, 2. a character vector of locations, or 3. a list of character vectors with outcomes as list names. For 3., outcomes not included will have their data locations inferred as in 1.}
+
 \item{label.function}{A function to reformat labels. If NULL, will use the first provided simset's "get.labels" property, or will do no transformation if plotting data only.}
 
 \item{title}{NULL or a single, non-NA character value. If "location", the location of the first provided simset (if any) will be used for the title.}
+
+\item{title.suffix}{NULL or a single, non-NA character value. Something to append to the end of the title that would be generated automatically based on the 'title' argument. Note that this pastes with no space, so add the space in if you want it.}
 
 \item{data.manager}{The data.manager from which to draw real-world data for the plots}
 
 \item{style.manager}{We are going to have to define this down the road. It's going to govern how we do lines and sizes and colors. For now, just hard code those in, and we'll circle back to it}
 
 \item{show.data.pull.error}{Not finding data does not block the plot from showing simulation projections, but if you'd like to see in error when data doesn't appear, set this to TRUE.}
+
+\item{simset.names}{A functional argument to help make sure the sims have names when they were plopped in by some other function that used them as variables.}
 }
 \description{
 Plot Simulations And Data

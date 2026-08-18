@@ -42,7 +42,7 @@ create.nested.proportion.likelihood.instructions(
   n.error.variance.type = "cv",
   n.error.variance.term.if.estimated = 0.8,
   n.error.variance.type.if.estimated = "exp.of.variance",
-  weights,
+  weights = list(),
   equalize.weight.by.year = T,
   partitioning.function,
   name = outcome.for.sim

@@ -44,7 +44,7 @@ create.time.lagged.comparison.nested.proportion.likelihood.instructions(
   n.error.variance.type.if.estimated = "exp.of.variance",
   ratio.cv = NULL,
   ratio.correlation = NULL,
-  weights,
+  weights = list(),
   equalize.weight.by.year = T,
   partitioning.function,
   use.lognormal.approximation = T,

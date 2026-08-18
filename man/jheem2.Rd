@@ -7,7 +7,7 @@
 \title{jheem2: A package for setting up and running simulations using the JHEEM Engine
 #'}
 \description{
-One paragraph description of what the package does as one or more full sentences.
+The engine for the JHEEM (Johns Hopkins Epidemiological and Economic Model) family of compartmental models of HIV and STI transmission. Provides tools to specify versioned model structures, compile and run them as differential-equation simulations, manage surveillance data, map between data ontologies, define interventions, and calibrate models to data via likelihoods.
 }
 \section{jheem2 functions}{
 

@@ -14,5 +14,5 @@ compare.sims(likelihood, sim1, sim2, piecewise = T, log = F)
 \item{log}{Whether to use log likelihood}
 }
 \description{
-Compare how two simsets score on a likelihood
+Compare how two simsets score on a likelihood.
 }

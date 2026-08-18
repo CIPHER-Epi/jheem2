@@ -17,6 +17,8 @@ track.cumulative.outcome(
   subset.dimension.values = NULL,
   rename.dimension.values = NULL,
   force.dim.names.to.keep.dimensions = F,
+  allow.expand.dimensions = NULL,
+  allow.expand.denominator.dimensions = NULL,
   dimension.aliases = NULL,
   dimension.alias.suffix = NULL,
   scale = NULL,
@@ -46,9 +48,11 @@ track.cumulative.outcome(
 
 \item{subset.dimension.values}{A list of dimension values indicating for which values of which dimensions the outcome should be tracked}
 
-\item{rename.dimension.values}{A list of names character vectors indicating which dimension values should be renamed in the}
+\item{rename.dimension.values}{A list of names character vectors indicating which dimension values should be renamed in the outcome ontology}
 
 \item{force.dim.names.to.keep.dimensions}{A logical indicating whether the dim.names of the outcome should be forced to match keep.dimensions (based on dimension values in compartments.for.infected.only, compartments.for.uninfected.only, and compartments.for.infected.and.uninfected) regardless of the dimensions of the underlying model quantities that it comprises.}
+
+\item{allow.expand.dimensions, allow.expand.denominator.dimensions}{A character vector of dimensions which can be added to the outcome (or outcome's denominator) even if not present in its component outcomes or quantities. The outcome will have the same value for all values in that dimension}
 
 \item{dimension.aliases}{A named character vector indicating what dimensions in the inputs to the outcome (the names of the vector) should be converted to (the values of the vector)}
 

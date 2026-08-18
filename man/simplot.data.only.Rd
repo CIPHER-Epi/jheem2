@@ -15,6 +15,7 @@ simplot.data.only(
   label.function = NULL,
   plot.year.lag.ratio = F,
   title = "location",
+  title.suffix = NULL,
   n.facet.rows = NULL,
   append.url = F,
   data.manager = get.default.data.manager(),
@@ -26,6 +27,8 @@ simplot.data.only(
 \arguments{
 \item{outcomes}{A character vector of which simulation outcomes to plot}
 
+\item{locations}{A character vector of locations for which to pull data.}
+
 \item{split.by}{At most one dimension}
 
 \item{facet.by}{Any number of dimensions but cannot include the split.by dimension}
@@ -34,15 +37,15 @@ simplot.data.only(
 
 \item{label.function}{A function to reformat labels. If NULL, will use the first provided simset's "get.labels" property, or will do no transformation if plotting data only.}
 
-\item{title}{NULL or a single, non-NA character value. If "location", the first location provided in "locations" will be used for the title.}
+\item{title}{NULL or a single, non-NA character value. If "location", the location of the first provided simset (if any) will be used for the title.}
+
+\item{title.suffix}{NULL or a single, non-NA character value. Something to append to the end of the title that would be generated automatically based on the 'title' argument. Note that this pastes with no space, so add the space in if you want it.}
 
 \item{data.manager}{The data.manager from which to draw real-world data for the plots}
 
 \item{style.manager}{We are going to have to define this down the road. It's going to govern how we do lines and sizes and colors. For now, just hard code those in, and we'll circle back to it}
 
 \item{show.data.pull.error}{Not finding data does not block the plot from showing simulation projections, but if you'd like to see in error when data doesn't appear, set this to TRUE.}
-
-\item{A}{character vector of which simulation outcomes to plot. Note: This should be the names of the outcomes in the provided data manager, NOT in the simulations.}
 }
 \description{
 Simplot Data Only

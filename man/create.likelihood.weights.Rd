@@ -13,7 +13,7 @@ create.likelihood.weights(
 \arguments{
 \item{total.weight}{The weight that is applied to all observations in the}
 
-\item{is.recursive}{Should this weight apply to deeper levels of stratification? For exampel, if F and dimension.values is the default empty list, this weight would only apply to data points that are totals.}
+\item{is.recursive}{Should this weight apply to deeper levels of stratification? For example, if F and dimension.values is the default empty list, this weight would only apply to data points that are totals.}
 }
 \description{
 Create Weights to Be Applied in Calculating a JHEEM Likelihood

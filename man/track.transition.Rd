@@ -21,6 +21,8 @@ track.transition(
   exclude.dimensions = NULL,
   subset.dimension.values = NULL,
   rename.dimension.values = NULL,
+  allow.expand.dimensions = NULL,
+  allow.expand.denominator.dimensions = NULL,
   dimension.aliases = NULL,
   dimension.alias.suffix = NULL,
   scale = NULL,
@@ -58,7 +60,9 @@ track.transition(
 
 \item{subset.dimension.values}{A list of dimension values indicating for which values of which dimensions the outcome should be tracked}
 
-\item{rename.dimension.values}{A list of names character vectors indicating which dimension values should be renamed in the}
+\item{rename.dimension.values}{A list of names character vectors indicating which dimension values should be renamed in the outcome ontology}
+
+\item{allow.expand.dimensions, allow.expand.denominator.dimensions}{A character vector of dimensions which can be added to the outcome (or outcome's denominator) even if not present in its component outcomes or quantities. The outcome will have the same value for all values in that dimension}
 
 \item{dimension.aliases}{A named character vector indicating what dimensions in the inputs to the outcome (the names of the vector) should be converted to (the values of the vector)}
 

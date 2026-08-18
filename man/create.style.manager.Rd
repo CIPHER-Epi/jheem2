@@ -15,9 +15,9 @@ create.style.manager(
   data.palette = ggsci::pal_jama(),
   linetypes = c("solid", "dashed", "dotted", "dotdash"),
   shapes = 21:25,
-  shade.increment = -16,
+  shade.increment = -64,
   alpha.ribbon = 0.2,
-  alpha.line = NULL,
+  alpha.line = 1,
   linewidth.baseline = 1,
   linewidth.slope = 3
 )
