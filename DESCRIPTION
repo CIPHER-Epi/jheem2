@@ -1,11 +1,16 @@
 Package: jheem2
 Type: Package
 Title: Code to set up and run simulations using the JHEEM Engine
-Version: 1.11.1
-Date: 2022-10-06
+Version: 1.11.2
+Date: 2026-08-18
 Author: Anthony Fojo
 Maintainer: Anthony Fojo <anthony.fojo@jhmi.edu>
-Description: One paragraph description of what the package does as one or more full sentences.
+Description: The engine for the JHEEM (Johns Hopkins Epidemiological and Economic
+    Model) family of compartmental models of HIV and STI transmission. Provides
+    tools to specify versioned model structures, compile and run them as
+    differential-equation simulations, manage surveillance data, map between
+    data ontologies, define interventions, and calibrate models to data via
+    likelihoods.
 License: GPL (>= 2)
 Imports: Rcpp (>= 1.0.10), reshape2, deSolve, ggplot2, locations, ggsci, plotly, ungroup
 LinkingTo: Rcpp
