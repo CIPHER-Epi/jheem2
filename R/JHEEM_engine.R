@@ -1572,10 +1572,23 @@ PROTECTED.NUMERIC.VECTOR = R6::R6Class(
     )
 )
 
+# These S3 methods must be registered in the NAMESPACE (via @export) or they
+# will not dispatch under Rscript/library(), only in interactive sessions that
+# happen to have them on the search path
+
+#'@export
 '[.protected.numeric.vector' <- function(obj, ...) {obj$'['(...)}
+
+#'@export
 '[<-.protected.numeric.vector' <- function(obj, ...) {obj$'[<-'(...)}
+
+#'@export
 'length.protected.numeric.vector' <- function(obj) {obj$length()}
+
+#'@export
 'names.protected.numeric.vector' <- function(obj) {obj$names()}
+
+#'@export
 'c.protected.numeric.vector' <- function(obj, ...) {obj$c(...)}
 
 
