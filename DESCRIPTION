@@ -1,11 +1,11 @@
 Package: jheem2
 Type: Package
 Title: Code to set up and run simulations using the JHEEM Engine
-Version: 1.11.2
+Version: 1.12.3.9000
 Date: 2026-08-18
 Author: Anthony Fojo
 Maintainer: Anthony Fojo <anthony.fojo@jhmi.edu>
-Description: The engine for the JHEEM (Johns Hopkins Epidemiological and Economic
+Description: The engine for the JHEEM (Joint HIV Epidemiology and Economic
     Model) family of compartmental models of HIV and STI transmission. Provides
     tools to specify versioned model structures, compile and run them as
     differential-equation simulations, manage surveillance data, map between
