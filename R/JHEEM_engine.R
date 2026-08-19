@@ -3408,9 +3408,9 @@ JHEEM = R6::R6Class(
             # Figure out if quantities are static
             private$i.quantity.is.static = rep(F, length(private$i.kernel$quantity.names))
             names(private$i.quantity.is.static) = private$i.kernel$quantity.names
-            private$i.quantity.is.static[private$i.kernel$element.names] = sapply(private$i.element.backgrounds[private$i.kernel$element.names], function(bkgd){
+            private$i.quantity.is.static[private$i.kernel$element.names] = vapply(private$i.element.backgrounds[private$i.kernel$element.names], function(bkgd){
                 bkgd$is.static
-            })
+            }, FUN.VALUE = logical(1))
             
             non.element.quantity.names = setdiff(private$i.kernel$quantity.names, private$i.kernel$element.names)
             private$i.quantity.is.static[non.element.quantity.names] = vapply(non.element.quantity.names, function(quantity.name){

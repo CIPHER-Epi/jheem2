@@ -271,7 +271,9 @@ JHEEM.KERNEL = R6::R6Class(
             
             #-- Core Components --#
             
-            dynamic.outcome.names = names(private$i.outcome.kernels)[sapply(private$i.outcome.kernels, function(outcome){outcome$is.dynamic})]
+            dynamic.outcome.names = names(private$i.outcome.kernels)[vapply(private$i.outcome.kernels, function(outcome){outcome$is.dynamic}, FUN.VALUE = logical(1))]
+            if (is.null(dynamic.outcome.names)) # when there are no outcome kernels at all
+                dynamic.outcome.names = character(0)
             dynamic.outcomes = sapply(dynamic.outcome.names, specification$get.outcome)
             
             sorted.components = compile.and.sort.core.components.for.location(specification = specification,
@@ -286,7 +288,7 @@ JHEEM.KERNEL = R6::R6Class(
                     comp$mechanism.types = comp$schema$mechanism.types
                     
                     # Figure out which dynamic outcomes apply
-                    outcome.applies.to.comp = sapply(dynamic.outcomes, comp$schema$dynamic.tracker.involves.component, comp=comp)
+                    outcome.applies.to.comp = vapply(dynamic.outcomes, comp$schema$dynamic.tracker.involves.component, FUN.VALUE = logical(1), comp=comp)
                     comp$outcome.names.that.apply = dynamic.outcome.names[outcome.applies.to.comp]
                     
                     # Get rid of the schema so we don't inadvertently save its environment
