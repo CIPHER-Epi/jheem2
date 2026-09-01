@@ -10,6 +10,7 @@
 #'@param facet.by Any number of dimensions but cannot include the split.by dimension
 #'@param dimension.values.post.mapping How to subset data in the form it will take after mappings have been applied to align sim and data ontologies. A list.
 #'@param plot.which Should simulation data and calibration data be plotted ('sim.and.data'), or only simulation data ('sim.only')
+#'@param omit.data.years Years to omit data, for example if data is available but wasn't calibrated to, while still showing simulation values for those years
 #'@param label.function A function to reformat labels. If NULL, will use the first provided simset's "get.labels" property, or will do no transformation if plotting data only.
 #'@param data.locations Specifies locations for which to pull data. May be 1. NULL, in which case data locations will be inferred from the simsets' likelihoods, 2. a character vector of locations, or 3. a list of character vectors with outcomes as list names. For 3., outcomes not included will have their data locations inferred as in 1.
 #'@param title NULL or a single, non-NA character value. If "location", the location of the first provided simset (if any) will be used for the title.
@@ -35,6 +36,7 @@ simplot <- function(...,
                     target.ontology = NULL,
                     plot.which = c('sim.and.data', 'sim.only')[1],
                     summary.type = c('individual.simulation', 'mean.and.interval', 'median.and.interval')[1],
+                    omit.data.years = NULL,
                     data.locations = NULL,
                     label.function = NULL,
                     plot.year.lag.ratio = F,
@@ -72,6 +74,7 @@ simplot <- function(...,
                                       target.ontology=target.ontology,
                                       plot.which=plot.which,
                                       summary.type=summary.type,
+                                      omit.data.years=omit.data.years,
                                       data.locations=data.locations,
                                       label.function=label.function,
                                       plot.year.lag.ratio=plot.year.lag.ratio,
@@ -267,6 +270,7 @@ prepare.plot <- function(simset.list=NULL,
                          target.ontology = NULL,
                          plot.which = c('sim.and.data', 'sim.only', 'data.only')[1],
                          summary.type = c('individual.simulation', 'mean.and.interval', 'median.and.interval')[1],
+                         omit.data.years = NULL,
                          data.locations = NULL,
                          plot.year.lag.ratio = F,
                          label.function = NULL,
@@ -351,6 +355,12 @@ prepare.plot <- function(simset.list=NULL,
         }
         else
             stop(paste0(error.prefix, "'data.locations' must be either 1) NULL, 2) a non-empty character vector with no NAs, or 3) a list of non-empty character vectors with no NAs with outcomes as list names"))
+    }
+    
+    # THIS WILL HAVE TO BE FIXED LATER SO THAT IT WORKS EVEN IF YEARS ARE NOT IN DIMENSION VALUES
+    data_dimension.values <- dimension.values
+    if ("year" %in% names(dimension.values)) {
+        data_dimension.values[["year"]] <- setdiff(data_dimension.values[["year"]], omit.data.years)
     }
     
     # Get the real-world outcome names
@@ -455,7 +465,7 @@ prepare.plot <- function(simset.list=NULL,
                     # browser()
                     if (!is.null(target.ontology) && !is.list(target.ontology))
                         result = data.manager$pull(outcome = outcomes.for.data[[i]],
-                                                   dimension.values = c(dimension.values, dimension.values.post.mapping, list(location = outcome.locations[[i]])),
+                                                   dimension.values = c(data_dimension.values, dimension.values.post.mapping, list(location = outcome.locations[[i]])),
                                                    keep.dimensions = c('year', 'location', facet.by, split.by), #'year' can never be in facet.by
                                                    target.ontology = target.ontology,
                                                    allow.mapping.from.target.ontology = F,
@@ -464,7 +474,7 @@ prepare.plot <- function(simset.list=NULL,
                                                    debug=F)
                     else if (is.list(target.ontology) && outcomes.for.data[[i]] %in% names(target.ontology))
                         result = data.manager$pull(outcome = outcomes.for.data[[i]],
-                                                   dimension.values = c(dimension.values, dimension.values.post.mapping, list(location = outcome.locations[[i]])),
+                                                   dimension.values = c(data_dimension.values, dimension.values.post.mapping, list(location = outcome.locations[[i]])),
                                                    keep.dimensions = c('year', 'location', facet.by, split.by), #'year' can never be in facet.by
                                                    target.ontology = target.ontology[[outcomes.for.data[[i]]]],
                                                    allow.mapping.from.target.ontology = F,
@@ -473,7 +483,7 @@ prepare.plot <- function(simset.list=NULL,
                                                    debug=F)
                     else if (plot.which=='sim.and.data')
                         result = data.manager$pull(outcome = outcomes.for.data[[i]],
-                                                   dimension.values = c(dimension.values, dimension.values.post.mapping, list(location = outcome.locations[[i]])),
+                                                   dimension.values = c(data_dimension.values, dimension.values.post.mapping, list(location = outcome.locations[[i]])),
                                                    keep.dimensions = c('year', 'location', facet.by, split.by), #'year' can never be in facet.by
                                                    target.ontology = outcome.ontologies[[i]],
                                                    allow.mapping.from.target.ontology = T,
@@ -482,7 +492,7 @@ prepare.plot <- function(simset.list=NULL,
                                                    debug=F)
                     else # See if we really want this or not
                         result = data.manager$pull(outcome = outcomes.for.data[[i]],
-                                                   dimension.values = c(dimension.values, dimension.values.post.mapping, list(location = outcome.locations[[i]])),
+                                                   dimension.values = c(data_dimension.values, dimension.values.post.mapping, list(location = outcome.locations[[i]])),
                                                    keep.dimensions = c('year', 'location', facet.by, split.by), #'year' can never be in facet.by
                                                    target.ontology = NULL,
                                                    append.attributes=append.attributes,
