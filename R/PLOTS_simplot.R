@@ -518,6 +518,10 @@ prepare.plot <- function(simset.list=NULL,
                 # If we have multiple outcomes that may map differently (for example, with years), the factor levels unavoidably determined by the first outcome for reshape2::melt may not be valid for subsequent outcomes
                 one.df.outcome = reshape2::melt(outcome.data, na.rm = T, as.is=T)
                 
+                # Is this when I can filter years to omit again?
+                
+                one.df.outcome <- one.df.outcome[!(one.df.outcome[["year"]] %in% omit.data.years),]
+                
                 # Convert labels
                 columns_to_labelize <- setdiff(colnames(one.df.outcome), c("year", "location", "source", "value"))
                 one.df.outcome[columns_to_labelize] <- lapply(one.df.outcome[columns_to_labelize], function(col) {
