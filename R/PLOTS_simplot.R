@@ -586,7 +586,7 @@ prepare.plot <- function(simset.list=NULL,
                 simset = simset.list[[i]]
                 if (!is.null(outcome.mappings[[outcome]])) mapping.this.outcome = outcome.mappings[[outcome]] # case when target ontology is NULL or is a list but doesn't include this outcome
                 else if (is.list(target.ontology)) mapping.this.outcome = get.ontology.mapping(outcome.ontologies[[i]], target.ontology[[outcome]])
-                else if (!is.null(target.ontology)) mapping.this.outcome = get.ontology.mapping(outcome.ontologies[[i]], target.ont)
+                else if (!is.null(target.ontology)) mapping.this.outcome = get.ontology.mapping(outcome.ontologies[[i]], target.ontology)
                 else mapping.this.outcome = NULL
                 # browser()
                 simset.data.this.outcome = simset$get(outcomes = outcome,
