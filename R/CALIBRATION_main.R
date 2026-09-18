@@ -1848,7 +1848,7 @@ prepare.mcmc.summary <- function(version,
         stop("Cannot prepare MCMC summary - we have not finished the sampling for the prior calibration")
     load(last.chunk.file)
     last.sim.parameters = mcmc@simulations[[length(mcmc@simulations)]]$params
-    
+ 
     
     if (!get.one.set.of.parameters)
     {
@@ -1866,6 +1866,7 @@ prepare.mcmc.summary <- function(version,
         # Iterate through each chunk and use to calculate sample mean and covariance    
         for (chunk.file in chunk.files)
         {
+            load(file.path(dir, chunk.file))
             # Calculate the mean and covariance of the new samples
             new.samples = mcmc@samples
             n.new.samples = prod(dim(new.samples)) / dim(new.samples)['variable']
