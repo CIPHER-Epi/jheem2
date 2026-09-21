@@ -386,8 +386,8 @@ get.calibration.dir <- function(version,
     file.path(root.dir, 
               MCMC.SUB.DIRECTORY, 
               version,
-              location, 
-              calibration.code)
+              calibration.code,
+              location)
 }
 
 get.mcmc.summary.file <- function(version,
@@ -422,8 +422,8 @@ get.transmute.calibration.dir <- function(to.version,
     file.path(root.dir, 
               MCMC.SUB.DIRECTORY, 
               version.path,
-              location, 
-              paste0(transmute.code, '-', n.sim))
+              paste0(transmute.code, '-', n.sim),
+              location)
 }
 
 get.transmute.calibration.control.file <- function(to.version,
