@@ -1991,7 +1991,7 @@ SPLINE.FUNCTIONAL.FORM = R6::R6Class(
                 }
                 else
                 {
-                    after.knot.value = privatei.$modifier.link$reverse.apply(
+                    after.knot.value = private$i.modifier.link$reverse.apply(
                         private$i.modifier.link$apply(knot.values[[length(knot.values)]]) + 
                             terms$after.modifier
                     )
