@@ -1671,14 +1671,14 @@ SPLINE.FUNCTIONAL.FORM = R6::R6Class(
                 
                 if (!is.null(before.modifier))
                 {
-                    before.modifier.increasing.change.link = get.link(before.modifier.increasing.change.link, min=modifier.min, max=modifier.max)
-                    before.modifier.decreasing.change.link = get.link(before.modifier.decreasing.change.link, min=modifier.min, max=modifier.max)
+                    before.modifier.increasing.change.link = get.link(before.modifier.increasing.change.link, min=knot.min, max=knot.max)
+                    before.modifier.decreasing.change.link = get.link(before.modifier.decreasing.change.link, min=knot.min, max=knot.max)
                 }
                 
                 if (!is.null(after.modifier))
                 {
-                    after.modifier.increasing.change.link = get.link(after.modifier.increasing.change.link, min=modifier.min, max=modifier.max)
-                    after.modifier.decreasing.change.link = get.link(after.modifier.decreasing.change.link, min=modifier.min, max=modifier.max)
+                    after.modifier.increasing.change.link = get.link(after.modifier.increasing.change.link, min=knot.min, max=knot.max)
+                    after.modifier.decreasing.change.link = get.link(after.modifier.decreasing.change.link, min=knot.min, max=knot.max)
                 }
             }
             
