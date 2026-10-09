@@ -439,7 +439,9 @@ set.up.calibration <- function(version,
         else
         {
             spacing = floor(n.samples/(calibration.info$n.chains-1))
-            sample.indices = n.samples - spacing * ((calibration.info$n.chains-1):0)
+            # sample.indices = n.samples - spacing * ((calibration.info$n.chains-1):0)
+            sample.indices = round(seq(1, n.samples, length.out = calibration.info$n.chains))
+            
         }
         
         # To seed multiple chains with different values from a sample of the preceding calibration's sampled parameter values,
