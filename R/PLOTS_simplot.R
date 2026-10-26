@@ -12,6 +12,7 @@
 #'@param plot.which Should simulation data and calibration data be plotted ('sim.and.data'), or only simulation data ('sim.only')
 #'@param omit.data.years Years to omit data, for example if data is available but wasn't calibrated to, while still showing simulation values for those years
 #'@param label.function A function to reformat labels. If NULL, will use the first provided simset's "get.labels" property, or will do no transformation if plotting data only.
+#'@param data.na.rm Sets na.rm = T or F during the data pull step. If NULL, will use T for rates, proportions, and ratios, and F for all other scales.
 #'@param data.locations Specifies locations for which to pull data. May be 1. NULL, in which case data locations will be inferred from the simsets' likelihoods, 2. a character vector of locations, or 3. a list of character vectors with outcomes as list names. For 3., outcomes not included will have their data locations inferred as in 1.
 #'@param title NULL or a single, non-NA character value. If "location", the location of the first provided simset (if any) will be used for the title.
 #'@param title.suffix NULL or a single, non-NA character value. Something to append to the end of the title that would be generated automatically based on the 'title' argument. Note that this pastes with no space, so add the space in if you want it.
@@ -37,6 +38,7 @@ simplot <- function(...,
                     plot.which = c('sim.and.data', 'sim.only')[1],
                     summary.type = c('individual.simulation', 'mean.and.interval', 'median.and.interval')[1],
                     omit.data.years = NULL,
+                    data.na.rm = NULL,
                     data.locations = NULL,
                     label.function = NULL,
                     plot.year.lag.ratio = F,
@@ -75,6 +77,7 @@ simplot <- function(...,
                                       plot.which=plot.which,
                                       summary.type=summary.type,
                                       omit.data.years=omit.data.years,
+                                      data.na.rm=data.na.rm,
                                       data.locations=data.locations,
                                       label.function=label.function,
                                       plot.year.lag.ratio=plot.year.lag.ratio,
@@ -198,6 +201,7 @@ simplot.data.only <- function(outcomes,
                               dimension.values = list(),
                               dimension.values.post.mapping = list(),
                               target.ontology = NULL,
+                              data.na.rm = NULL,
                               label.function = NULL,
                               plot.year.lag.ratio = F,
                               title = "location",
@@ -226,6 +230,7 @@ simplot.data.only <- function(outcomes,
                                       target.ontology=target.ontology,
                                       plot.which='data.only',
                                       summary.type=summary.type,
+                                      data.na.rm=data.na.rm,
                                       data.locations=NULL,
                                       label.function=label.function,
                                       plot.year.lag.ratio=plot.year.lag.ratio,
@@ -271,6 +276,7 @@ prepare.plot <- function(simset.list=NULL,
                          plot.which = c('sim.and.data', 'sim.only', 'data.only')[1],
                          summary.type = c('individual.simulation', 'mean.and.interval', 'median.and.interval')[1],
                          omit.data.years = NULL,
+                         data.na.rm = NULL,
                          data.locations = NULL,
                          plot.year.lag.ratio = F,
                          label.function = NULL,
@@ -340,6 +346,9 @@ prepare.plot <- function(simset.list=NULL,
     # Style manager
     if (!R6::is.R6(style.manager) || !is(style.manager, "jheem.style.manager"))
         stop(paste0(error.prefix, "'style.manager' must be a JHEEM style manager"))
+    
+    if (!is.null(data.na.rm) && (!is.logical(data.na.rm) || length(data.na.rm) != 1 || is.na(data.na.rm)))
+        stop(paste0(error.prefix, "'data.na.rm' must be NULL, T, or F"))
     
     # data.locations is either 1) NULL, 2) an unnamed list with one character vector, or 3) a list of characters with outcomes as names
     if (!is.null(data.locations)) {
@@ -431,8 +440,8 @@ prepare.plot <- function(simset.list=NULL,
                 locations.this.outcome = data.locations[[1]]
             else
                 locations.this.outcome = unique(unlist(lapply(simset.list, function(simset) {
-                simset$outcome.location.mapping$get.observed.locations(outcome, simset$location)
-            })))
+                    simset$outcome.location.mapping$get.observed.locations(outcome, simset$location)
+                })))
         })
         names(outcome.locations) = outcomes.for.data
     }
@@ -452,6 +461,20 @@ prepare.plot <- function(simset.list=NULL,
     source.metadata.list <- list()
     if (append.url) append.attributes='url' else append.attributes=NULL
     
+    # Decide na.rm if NULL for each outcome
+    na_rm = sapply(outcomes, function(outcome) {
+        if (is.null(data.na.rm)) {
+            scale = outcome.metadata.list[[outcome]]$scale
+            if (scale %in% c('rate', 'ratio', 'proportion'))
+                na_rm=T
+            else
+                na_rm=F
+        } else {
+            na_rm = data.na.rm
+        }
+        na_rm
+    })
+    
     df.truth = NULL
     for (i in seq_along(outcomes.for.data))
     {
@@ -470,7 +493,7 @@ prepare.plot <- function(simset.list=NULL,
                                                    target.ontology = target.ontology,
                                                    allow.mapping.from.target.ontology = F,
                                                    append.attributes=append.attributes,
-                                                   na.rm=T,
+                                                   na.rm=na_rm[[i]],
                                                    debug=F)
                     else if (is.list(target.ontology) && outcomes.for.data[[i]] %in% names(target.ontology))
                         result = data.manager$pull(outcome = outcomes.for.data[[i]],
@@ -479,7 +502,7 @@ prepare.plot <- function(simset.list=NULL,
                                                    target.ontology = target.ontology[[outcomes.for.data[[i]]]],
                                                    allow.mapping.from.target.ontology = F,
                                                    append.attributes=append.attributes,
-                                                   na.rm=T,
+                                                   na.rm=na_rm[[i]],
                                                    debug=F)
                     else if (plot.which=='sim.and.data')
                         result = data.manager$pull(outcome = outcomes.for.data[[i]],
@@ -488,7 +511,7 @@ prepare.plot <- function(simset.list=NULL,
                                                    target.ontology = outcome.ontologies[[i]],
                                                    allow.mapping.from.target.ontology = T,
                                                    append.attributes=append.attributes,
-                                                   na.rm=T,
+                                                   na.rm=na_rm[[i]],
                                                    debug=F)
                     else # See if we really want this or not
                         result = data.manager$pull(outcome = outcomes.for.data[[i]],
@@ -496,7 +519,7 @@ prepare.plot <- function(simset.list=NULL,
                                                    keep.dimensions = c('year', 'location', facet.by, split.by), #'year' can never be in facet.by
                                                    target.ontology = NULL,
                                                    append.attributes=append.attributes,
-                                                   na.rm=T,
+                                                   na.rm=na_rm[[i]],
                                                    debug=F)
                     
                 },
