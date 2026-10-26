@@ -7,7 +7,9 @@
 create.jheem.kernel <- function(version, location)
 {
     specification = get.compiled.specification.for.version(version)
-    specification$get.jheem.kernel(location = location)
+    kernel = specification$get.jheem.kernel(location = location)
+    set.data.inputs(kernel, make.data.inputs.record())
+    kernel
 }
 
 JHEEM.KERNEL = R6::R6Class(
@@ -755,6 +757,7 @@ JHEEM.KERNEL = R6::R6Class(
         i.location = NULL,
         i.created.date = NULL,
         i.created.time = NULL,
+        i.data.inputs = NULL, # see get.data.inputs()
         
         i.sub.versions = NULL,
         

@@ -113,6 +113,7 @@ load.data.manager <- function(file,
                                          preserve.original.last.modified.date=T)
     set.data.manager.provenance(new.data.manager,
                                 make.data.manager.provenance(file, provenance, error.prefix))
+    note.data.manager.load(new.data.manager)
     
     if (set.as.default)
         default.data.manager.holder$default.data.manager = new.data.manager

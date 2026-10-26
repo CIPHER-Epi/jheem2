@@ -163,7 +163,7 @@ do.instantiate.likelihood <- function(instructions,
         stop(paste0(error.prefix, "likelihood instructions' 'outcome.for.sim' must be a registered outcome in the specification"))
     }
     
-    likelihood.class.generator$new(
+    likelihood = likelihood.class.generator$new(
         instructions = instructions,
         version = version,
         sub.version = sub.version,
@@ -174,6 +174,8 @@ do.instantiate.likelihood <- function(instructions,
         throw.error.if.no.data = throw.error.if.no.data,
         error.prefix = error.prefix
     )
+    set.data.inputs(likelihood, make.data.inputs.record(passed.data.manager = data.manager))
+    likelihood
 }
 
 
@@ -599,6 +601,7 @@ JHEEM.LIKELIHOOD <- R6::R6Class(
     ),
     private = list(
         i.name = NULL,
+        i.data.inputs = NULL, # see get.data.inputs()
         i.check.consistency.flag = NULL,
         i.years = NULL,
         i.outcome.for.sim = NULL,
