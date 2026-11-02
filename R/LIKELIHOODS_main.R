@@ -574,6 +574,11 @@ JHEEM.LIKELIHOOD <- R6::R6Class(
             # use the code in JHEEM_outcome_location_mapping
             # create.outcome.location.mapping for single-outcome likelihoods
             # join.outcome.location.mappings for joint likelihoods
+        },
+        get.data = function() {
+            return(NULL)
+            stop("The 'data' function must be overridden at the subclass-level for a jheem.likelihood")
+            
         }
     ),
     active = list(

@@ -1317,6 +1317,9 @@ JHEEM.BASIC.LIKELIHOOD <- R6::R6Class(
                     sub.version = private$i.sub.version
             )
         },
+        get.data = function() {
+            cbind(private$i.obs.vector, private$i.metadata)
+        },
         check = function() {
             browser()
         }
@@ -1400,8 +1403,12 @@ JHEEM.BASIC.LIKELIHOOD <- R6::R6Class(
                         drop.single.sim.dimension = T
                     )
                 }
-                # Convert very small denominators to "actual zero"
-                sim.denominator.data[sim.denominator.data < 0.001] <- 0
+                
+                # Convert very small denominators to "actual zero", and zero the numerator
+                # in the same cells so mean and variance treat them consistently
+                small.denominator <- sim.denominator.data < 0.001
+                sim.denominator.data[small.denominator] <- 0
+                sim.numerator.data[small.denominator] <- 0
               #  expanded.sim.denominator.data <- expand.array(sim.denominator.data, dimnames(sim.numerator.data))
             }
             

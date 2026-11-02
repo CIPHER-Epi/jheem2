@@ -203,6 +203,8 @@ NumericVector get_basic_likelihood_sigma(
             previous_k = k;
             if (Poisson)
                 value_to_add = sim_numerator[k];
+            else if (sim_denominator[k] == 0)
+                value_to_add = 0;  // no denominator (incl. tiny ones zeroed in R) -> no binomial variance
             else
                 value_to_add = sim_numerator[k] * (1 - sim_numerator[k] / sim_denominator[k]);
         }
