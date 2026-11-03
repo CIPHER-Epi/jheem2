@@ -2066,7 +2066,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                                                               outcome.info=outcome.info,
                                                                               na.rm=na.rm)
                                 else
-                                    aggregated.data = apply.robust(data.to.aggregate, intersect(names(pre.agg.dimnames), keep.dimensions), function(x) {list(unique(unlist(x)))})
+                                    aggregated.data = apply.robust(data.by.data.type, intersect(names(pre.agg.dimnames), keep.dimensions), function(x) {list(unique(unlist(x)))})
                             }
                             else
                                 aggregated.data = data.by.data.type
@@ -2821,14 +2821,15 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             new.arr = sapply(arr, function(hashed.vector) {
                 # ignore any with NA because this implies that the corresponding
                 # data point becomes NA in the mapping that was applied
+                hashed.vector <- sort(unique(unlist(hashed.vector)))
                 if (any(is.na(hashed.vector))) NA
                 else {
                     # skip a step if we have cached this combo
                     cache.index = paste(hashed.vector, collapse="__")
                     if (cache.index %in% names(cache)) return(cache[[cache.index]])
-                    
-                    unhashed = paste(sort(unique(unlist(strsplit(sapply(hashed.vector, function(hashed.value) {private$i.details.list[[hashed.value]]}), "__")))), collapse = "__")
-                    cache[[cache.index]] = unhashed
+                    unhashed = paste(sort(unique(unlist(strsplit(sapply(hashed.vector, function(hashed.value) {
+                        hash.list[hashed.value]}), "__")))), collapse = "__")
+                    cache[[cache.index]] <<- unhashed
                     unhashed
                 }
             })
