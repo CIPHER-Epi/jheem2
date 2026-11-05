@@ -16,6 +16,9 @@ if (!exists('default.data.manager.holder'))
 DATA.MANAGER.ONTOLOGY.ERRORS = new.env()
 DATA.MANAGER.ONTOLOGY.ERRORS$did.you.remember.details = list()
 
+# The metadata fields every data manager starts with. Names are field names; values are whether the field is required on every put
+DATA.MANAGER.DEFAULT.METADATA.FIELDS = c(url = T, details = T)
+
 #'@title Get Ontology Error Debug Info
 #'@description Returns information useful for debugging ontology mapping errors
 #'@export
@@ -279,6 +282,26 @@ register.parent.data.source <- function(data.manager = get.default.data.manager(
                                  short.name=short.name)
 }
 
+#'@title Register a metadata field to a data manager
+#'
+#'@param data.manager A jheem.data.manager object
+#'@param name The name (a single character value) of the field, such as "author" or "year"
+#'@param required A logical indicating whether every subsequent put must supply a value for this field. Data already in the data manager are not affected
+#'
+#'@details Every data manager starts with the fields "url" and "details", both required
+#'
+#'@export
+register.data.metadata.field <- function(data.manager = get.default.data.manager(),
+                                         name,
+                                         required = F)
+{
+    if (!R6::is.R6(data.manager) || !is(data.manager, 'jheem.data.manager'))
+        stop("'data.manager' must be an R6 object with class 'jheem.data.manager'")
+
+    data.manager$register.metadata.field(name = name,
+                                         required = required)
+}
+
 #'@title Put data into a data manager
 #'
 #'@inheritParams distribute.dimension.values
@@ -291,6 +314,7 @@ register.parent.data.source <- function(data.manager = get.default.data.manager(
 #'@param source The (single) character name of the source from which these data derive. Must be a source previously registered with \code{\link{register.data.source}} Note: a source is conceived such that one source cannot contain two sets of data for the same set of dimension values
 #'@param url A character vector with at least one element giving one or more URLs indicating where the data derive from
 #'@param details A character vector with at least one element giving one or more URLs giving data collection details. In general, data collected and tabulated using the same approach should have the same details, whereas data with different methods/tabulation should have different details
+#'@param metadata A named list of metadata describing every data point in this put, such as list(url=..., details=..., author="CDC", year="2021"). Names must be fields registered with \code{\link{register.data.metadata.field}} ("url" and "details" are always registered). Each element must be a character (or numeric) vector with no NA or empty values. 'url' and 'details' may be given here or in their own arguments, but not both with different values
 #'@param allow.na.to.overwrite A logical indicator for whether NA values in data should be allowed to overwrite previous values put to the data manager (if data have been put previously)
 #'
 #'@export
@@ -301,8 +325,9 @@ put.data <- function(data.manager = get.default.data.manager(),
                      source,
                      ontology.name,
                      dimension.values=NULL,
-                     url,
-                     details,
+                     url=NULL,
+                     details=NULL,
+                     metadata=NULL,
                      allow.na.to.overwrite=F,
                      dimension.values.to.distribute=list(),
                      allow.distributing.on.proportion.scale=F,
@@ -321,6 +346,7 @@ put.data <- function(data.manager = get.default.data.manager(),
                      dimension.values=dimension.values,
                      url=url,
                      details=details,
+                     metadata=metadata,
                      allow.na.to.overwrite=allow.na.to.overwrite,
                      dimension.values.to.distribute = dimension.values.to.distribute,
                      allow.distributing.on.proportion.scale = allow.distributing.on.proportion.scale,
@@ -343,8 +369,9 @@ put.data.long.form <- function(data.manager = get.default.data.manager(),
                                source,
                                ontology.name,
                                dimension.values=NULL,
-                               url,
-                               details,
+                               url=NULL,
+                               details=NULL,
+                               metadata=NULL,
                                allow.na.to.overwrite=F,
                                dimension.values.to.distribute=list(),
                                allow.distributing.on.proportion.scale=F,
@@ -354,7 +381,7 @@ put.data.long.form <- function(data.manager = get.default.data.manager(),
 {
     if (!R6::is.R6(data.manager) || !is(data.manager, 'jheem.data.manager'))
         stop("'data.manager' must be an R6 object with class 'jheem.data.manager'")
-    
+
     data.manager$put.long.form(data=data,
                                outcome=outcome,
                                metric=metric,
@@ -363,6 +390,7 @@ put.data.long.form <- function(data.manager = get.default.data.manager(),
                                dimension.values=dimension.values,
                                url=url,
                                details=details,
+                               metadata=metadata,
                                allow.na.to.overwrite=allow.na.to.overwrite,
                                dimension.values.to.distribute = dimension.values.to.distribute,
                                allow.distributing.on.proportion.scale = allow.distributing.on.proportion.scale,
@@ -383,7 +411,7 @@ put.data.long.form <- function(data.manager = get.default.data.manager(),
 #'@param target.ontology Optional argument, indicating the ontology according to which results are desired. The data manager will apply an ontology mapping (if it can) to align its data to the desired ontology
 #'@param allow.mapping.from.target.ontology A logical indicator. If TRUE, if target.ontology is specified, but the data manager does not have data that can be mapped to the target ontology, it will search for data such that an ontology.mapping can be applied to data in the target.ontology that make those data align with the data pulled
 #'@param from.ontology.names The names of the ontologies from which to pull data (if available). If NULL, will pull from all ontologies that have any relevant data and can be mapped to the requested ontology. Must refer to ontologies previously registered to this data manager with \code{\link{register.data.ontology}}
-#'@param append.attributes A character vector indicating requested data attributes to include with the result. May be either "details", "url", or both
+#'@param append.attributes A character vector indicating requested data attributes to include with the result. May contain "url", "details", the name of any other registered metadata field, and/or "metadata"
 #'
 #'@param na.rm Whether to disregard NA values when aggregating out dimensions not in keep.dimensions
 #'@param ignore.ontologies.without.requested.locations If 'dimension.values' includes a location dimension, should ontologies that don't have any of those locations for the requested outcome be ignored? See detailed documentation about how ontologies factor into the output. (NOT YET WRITTEN)
@@ -394,6 +422,10 @@ put.data.long.form <- function(data.manager = get.default.data.manager(),
 #' (1) If target.ontology is not-NULL and allow.mapping.from.target.ontology==T, 'ontology.mapping' with refer to an ontology.mapping object that can be applied to data in the target.ontology to make them align with the returned array
 #' (2) If append.attributes includes "url", an array with the same dimensions as the returned array, where each element is one or more URLs separated by "__"
 #' (3) If append.attributes includes "details", an with the same dimensions as the returned array, where each element is one or more details about data collection separated by "__"
+#' (4) For any other metadata field named in append.attributes (eg "author"), a character array of the same form as for "url"
+#' (5) If append.attributes includes "metadata", 'metadata.ids', a list array with the same dimensions as the returned array where each element is an integer vector of metadata record IDs (NA where the data are NA),
+#'     and 'metadata', a data frame of the records those IDs refer to (as returned by the data manager's get.metadata.records() method)
+#' For all of these, an element is NA wherever the returned data are NA
 #'
 #'@export
 pull.data <- function(data.manager = get.default.data.manager(),
@@ -656,7 +688,12 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                 private$i.details = list()
                 private$i.url.list = character(0)
                 private$i.details.list = character(0)
-                
+
+                private$i.metadata = list()
+                private$i.metadata.fields = DATA.MANAGER.DEFAULT.METADATA.FIELDS
+                private$i.metadata.records = list()
+                private$i.metadata.keys = character(0)
+
                 private$i.outcome.info = list()
                 private$i.ontologies = list()
                 private$i.parent.source.info = list()
@@ -675,11 +712,21 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                 private$i.details = copy.from.data.manager$details
                 private$i.url.list = unlist(copy.from.data.manager$url.list)
                 private$i.details.list = unlist(copy.from.data.manager$details.list) # needed during rollout of vector form
-                
+
                 private$i.outcome.info = copy.from.data.manager$outcome.info
                 private$i.ontologies = copy.from.data.manager$ontologies
                 private$i.parent.source.info = copy.from.data.manager$parent.source.info
                 private$i.source.info = copy.from.data.manager$source.info
+
+                # Data managers saved before the metadata records existed have no 'metadata' binding, so build the records from their url and details
+                if (is.null(copy.from.data.manager$metadata))
+                    private$build.metadata.from.url.and.details()
+                else {
+                    private$i.metadata = copy.from.data.manager$metadata
+                    private$i.metadata.fields = copy.from.data.manager$metadata.fields
+                    private$i.metadata.records = copy.from.data.manager$metadata.records
+                    private$i.metadata.keys = copy.from.data.manager$metadata.keys
+                }
             }
             
             # Set creation date and last modified date to now; make backwards compatible
@@ -748,9 +795,56 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             
             # import data
             data = from.data.manager$data
+            from.metadata = from.data.manager$metadata
+
+            if (!is.null(from.metadata)) {
+                # register any metadata fields we don't have yet (as optional, since our existing data lack them)
+                for (field in setdiff(names(from.data.manager$metadata.fields), names(private$i.metadata.fields)))
+                    self$register.metadata.field(field, required = F)
+                from.records = from.data.manager$metadata.records
+
+                for (outcome in names(data)) {
+                    for (metric in names(data[[outcome]])) {
+                        for (source in names(data[[outcome]][[metric]])) {
+                            for (ontology in names(data[[outcome]][[metric]][[source]])) {
+                                for (stratification in names(data[[outcome]][[metric]][[source]][[ontology]])) {
+
+                                    # We must do one put PER metadata record, because every put() has exactly one record
+                                    data.this.strat = data[[outcome]][[metric]][[source]][[ontology]][[stratification]]
+                                    ids.this.strat = from.metadata[[outcome]][[metric]][[source]][[ontology]][[stratification]]
+
+                                    for (one.id in unique(as.vector(ids.this.strat))) {
+                                        if (is.na(one.id)) next
+                                        array.indices = which(ids.this.strat==one.id)
+
+                                        # Because we have to put arrays, not vectors corresponding to sporadic locations in an array, we fill one with NA everywhere else
+                                        one.data = array(NA, dim(data.this.strat), dimnames(data.this.strat))
+                                        one.data[array.indices] = data.this.strat[array.indices]
+
+                                        self$put(data = one.data,
+                                                 outcome=outcome,
+                                                 metric=metric,
+                                                 source=source,
+                                                 ontology.name=ontology,
+                                                 metadata=from.records[[one.id]],
+                                                 allow.na.to.overwrite = F)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                # Modified
+                private$i.last.modified.date = Sys.time()
+                if (!is.null(private$i.provenance)) private$i.provenance$modified = TRUE
+                return(invisible(self))
+            }
+
+            # The from.data.manager predates metadata records, so import using its url and details
             url = from.data.manager$url
             details = from.data.manager$details
-            
+
             for (outcome in names(data)) {
                 for (metric in names(data[[outcome]])) {
                     for (source in names(data[[outcome]][[metric]])) {
@@ -855,8 +949,9 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                 stop(paste0(error.prefix, "'retain.ontology.registrations' must be TRUE or FALSE"))
             
             
-            # Subset data, url, details ----
-            for (data.type in c('i.data', 'i.url', 'i.details')) {
+            # Subset data, url, details, metadata ----
+            # (records in i.metadata.records that no longer have any data are left in place; they are harmless)
+            for (data.type in c('i.data', 'i.url', 'i.details', 'i.metadata')) {
                 
                 used.outcomes = names(private[[data.type]])
                 if (!is.null(kept.outcomes))
@@ -1219,15 +1314,41 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             #-- Invisibly return the data manager for convenience --#
             invisible(self)
         },
-        
+
+        register.metadata.field = function(name, required = F)
+        {
+            error.prefix = "Cannot register metadata field: "
+            # *name* is a single, non-empty, non-NA character value, which can't be "metadata" because that is reserved in pull's 'append.attributes'
+            if (!is.character(name) || length(name)!=1 || is.na(name) || nchar(name)==0)
+                stop(paste0(error.prefix, "'name' must be a single, non-empty, non-NA character value"))
+            if (name == 'metadata')
+                stop(paste0(error.prefix, "'metadata' is reserved and cannot be the name of a field"))
+            if (name %in% names(DATA.MANAGER.DEFAULT.METADATA.FIELDS))
+                stop(paste0(error.prefix, "'", name, "' is a default field and cannot be re-registered"))
+
+            # *required* is a single, non-NA logical value
+            if (!is.logical(required) || length(required)!=1 || is.na(required))
+                stop(paste0(error.prefix, "'required' must be a single, non-NA logical value"))
+
+            private$i.metadata.fields[[name]] = required
+
+            # Modified
+            private$i.last.modified.date = Sys.time()
+            if (!is.null(private$i.provenance)) private$i.provenance$modified = TRUE
+
+            #-- Invisibly return the data manager for convenience --#
+            invisible(self)
+        },
+
         put = function(data,
                        outcome,
                        metric = 'estimate',
                        source,
                        ontology.name,
                        dimension.values=NULL,
-                       url,
-                       details,
+                       url=NULL,
+                       details=NULL,
+                       metadata=NULL,
                        allow.na.to.overwrite=F,
                        dimension.values.to.distribute=list(),
                        allow.distributing.on.proportion.scale=F,
@@ -1442,33 +1563,20 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             if (is.null(source.info))
                 stop(paste0(error.prefix, "'", source, "' is not a registered data source. Call register.data.source() to register it before putting data from that source"))
             
-            # 5) *url, and details* are
-            #    -- character vectors
+            # 5) *metadata* (including *url* and *details*, which may be given in their own arguments) is
+            #    a named list of registered fields, each of which is a character vector
             #    -- with at least one value
             #    -- with no NA values
             #    -- with no empty values
-            #    -- with no duplicates
-            
-            if (!is.character(url))
-                stop(paste0(error.prefix, "'url' must be a character vector"))
-            if (length(url)==0)
-                stop(paste0(error.prefix, "'url' must contain at least one value"))
-            if (any(is.na(url)))
-                stop(paste0(error.prefix, "'url' cannot contain NA values"))
-            if (any(nchar(url)==0))
-                stop(paste0(error.prefix, "'url' cannot contain empty values ('')"))
-            url = unique(url)
-            
-            if (!is.character(details))
-                stop(paste0(error.prefix, "'details' must be a character vector"))
-            if (length(details)==0)
-                stop(paste0(error.prefix, "'details' must contain at least one value"))
-            if (any(is.na(details)))
-                stop(paste0(error.prefix, "'details' cannot contain NA values"))
-            if (any(nchar(details)==0))
-                stop(paste0(error.prefix, "'details' cannot contain empty values ('')"))
-            details = unique(details)
-            
+            #    and which contains every required field (including url and details)
+
+            metadata.record = private$normalize.metadata.record(metadata = metadata,
+                                                                url = url,
+                                                                details = details,
+                                                                error.prefix = error.prefix)
+            url = metadata.record$url
+            details = metadata.record$details
+
             # 6) *allow.na.to.overwrite* is a single, non-NA, logical value
             if (!is.logical(allow.na.to.overwrite) || length(allow.na.to.overwrite)!=1 || is.na(allow.na.to.overwrite))
                 stop(paste0(error.prefix, "'allow.na.to.overwrite' must be a single, non-NA logical value"))
@@ -1494,6 +1602,9 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             }
             url = as.integer(url)
             details = as.integer(details) # don't know why which() and length() didn't already make it integer...
+
+            # One record ID for every data point in this put
+            metadata.id = private$get.or.add.metadata.record(metadata.record)
             if (printouts) {
                 phase3time = Sys.time()
                 print(paste0(dots, "Hashtime took ", phase3time - hashtime))
@@ -1503,7 +1614,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             #-- Set up to receive the data --#
             #--------------------------------#
             
-            data.element.names = c('i.data','i.url','i.details')
+            data.element.names = c('i.data','i.url','i.details','i.metadata')
             metadata.element.names = data.element.names[-1]
             
             # Figure out what stratification it goes in as the union of:
@@ -1647,6 +1758,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             # Put metadata
             private$i.url[[outcome]][[metric]][[source]][[ontology.name]][[stratification]][overwrite.indices] = url
             private$i.details[[outcome]][[metric]][[source]][[ontology.name]][[stratification]][overwrite.indices] = details
+            private$i.metadata[[outcome]][[metric]][[source]][[ontology.name]][[stratification]][overwrite.indices] = metadata.id
             if (printouts) {
                 totalputtime = Sys.time()
                 print(paste0(dots, "Final putting took ", totalputtime-finalputtime))
@@ -1667,8 +1779,9 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                  source,
                                  ontology.name,
                                  dimension.values=NULL,
-                                 url,
-                                 details,
+                                 url=NULL,
+                                 details=NULL,
+                                 metadata=NULL,
                                  allow.na.to.overwrite=F,
                                  dimension.values.to.distribute=list(),
                                  allow.distributing.on.proportion.scale=F,
@@ -1700,6 +1813,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                        data = data[data[['outcome']]==one.outcome,],
                                        url = url,
                                        details = details,
+                                       metadata = metadata,
                                        allow.na.to.overwrite=F,
                                        dimension.values.to.distribute = dimension.values.to.distribute,
                                        allow.distributing.on.proportion.scale = allow.distributing.on.proportion.scale,
@@ -1767,6 +1881,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                          data = arr.data,
                          url = url,
                          details = details,
+                         metadata = metadata,
                          allow.na.to.overwrite = allow.na.to.overwrite,
                          dimension.values.to.distribute = dimension.values.to.distribute,
                          allow.distributing.on.proportion.scale = allow.distributing.on.proportion.scale,
@@ -1879,9 +1994,10 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                     stop(paste0(error.prefix, "'exclude.ontology.names' must be either NULL or a character vector with no NA or empty values"))
                 
                 # *append.attributes* is either NULL or a character vector with no NA values that
-                #  contains only "details" or "url" or both
-                if (!is.null(append.attributes) && (!is.character(append.attributes) || anyNA(append.attributes) || !all(append.attributes %in% c("details", "url"))))
-                    stop(paste0(error.prefix, "append.attributes' must be either NULL or a character vector with no NA values that contains only 'details' or 'url' or both"))
+                #  contains only registered metadata fields (such as "details" or "url") or "metadata"
+                if (!is.null(append.attributes) && (!is.character(append.attributes) || anyNA(append.attributes) || !all(append.attributes %in% c(names(private$i.metadata.fields), "metadata"))))
+                    stop(paste0(error.prefix, "append.attributes' must be either NULL or a character vector with no NA values that contains only registered metadata fields (",
+                                collapse.with.and("'", names(private$i.metadata.fields), "'"), ") or 'metadata'"))
                 
                 # *na.rm* is a single, non-NA logical value
                 if (!is.logical(na.rm) || length(na.rm)!=1 || is.na(na.rm))
@@ -2014,15 +2130,18 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                             next
                         }
                         
-                        data.types = union('data', append.attributes)
-                        
-                        if (!is.null(append.attributes)) {
-                            append.attributes.data <- lapply(append.attributes, function(metadata.type) {
-                                private[[paste0("i.", metadata.type)]][[outcome]][[metric]][[source.name]][[ont.name]][[strat]]
-                            })
+                        # Whatever attributes are requested, we carry only the metadata record IDs through mapping and aggregation, and resolve them to fields at the end
+                        metadata.types = if (length(append.attributes) > 0) 'metadata' else NULL
+                        data.types = c('data', metadata.types)
+
+                        if (!is.null(metadata.types)) {
+                            # Points with no data (eg removed ones) still have a record ID; drop it so it can't be merged into aggregated cells
+                            strat.metadata = private$i.metadata[[outcome]][[metric]][[source.name]][[ont.name]][[strat]]
+                            strat.metadata[is.na(strat.data)] = NA
+                            append.attributes.data <- list(strat.metadata)
                         } else append.attributes.data <- NULL
-                        
-                        pulled.ont.data <- private$do.pre.aggregation.processing(append.attributes,
+
+                        pulled.ont.data <- private$do.pre.aggregation.processing(metadata.types,
                                                                                  mapping.to.apply,
                                                                                  strat.dimnames,
                                                                                  dimnames.for.apply,
@@ -2066,19 +2185,14 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                                                               outcome.info=outcome.info,
                                                                               na.rm=na.rm)
                                 else
-                                    aggregated.data = apply.robust(data.by.data.type, intersect(names(pre.agg.dimnames), keep.dimensions), function(x) {list(unique(unlist(x)))})
+                                    aggregated.data = apply.robust(data.by.data.type, intersect(names(pre.agg.dimnames), keep.dimensions), private$merge.metadata.ids)
                             }
                             else
                                 aggregated.data = data.by.data.type
-                            
+
                             dimnames(aggregated.data) = as.list(dimnames(aggregated.data))
-                            
-                            # Now is when we unhash the url and details
-                            if (data.type == "url")
-                                aggregated.data = self$unhash.url(aggregated.data)
-                            if (data.type == "details")
-                                aggregated.data = self$unhash.details(aggregated.data)
-                            
+
+                            # Metadata stay as record IDs here; they are resolved after sources are combined
                             aggregated.data
                         }) # end of lapply for data.types
                         
@@ -2127,15 +2241,15 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                 pulled.source.data
             }) # end of lapply for sources
             
-            # we have a list (one element per source) of lists (one element per data type, i.e. 'data', 'url', or 'details')
-            # repackage this to be a data array with 'url', 'details' and possibly a mapping as attributes
+            # we have a list (one element per source) of lists (one element per data type, i.e. 'data' and possibly 'metadata')
+            # repackage this to be a data array with the requested metadata attributes (eg 'url', 'details') and possibly a mapping as attributes
             post.processed.data = NULL
             if (debug) browser()
             # Some sources may have returned NULL above and should be removed.
             pre.processed.data = pre.processed.data[!unlist(lapply(pre.processed.data, is.null))]
-            # Extract data for data, url, and details out of what lapply returned above
+            # Extract data and metadata IDs out of what lapply returned above
             if (length(pre.processed.data) > 0) {
-                for (data.type in c('data', append.attributes)) {
+                for (data.type in c('data', if (length(append.attributes) > 0) 'metadata')) {
                     
                     # make a list of the data from the sources
                     data.by.source = lapply(pre.processed.data, function(x) {x[[data.type]]})
@@ -2181,10 +2295,10 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                     # incorporate it into final.return
                     if (data.type == 'data') {
                         post.processed.data = return.for.this.data.type
-                    } else if (data.type == 'url') {
-                        attr(post.processed.data, 'url') = return.for.this.data.type
-                    } else if (data.type == 'details') {
-                        attr(post.processed.data, 'details') = return.for.this.data.type
+                    } else if (data.type == 'metadata') {
+                        post.processed.data = private$attach.metadata.attributes(post.processed.data,
+                                                                                 id.array = return.for.this.data.type,
+                                                                                 append.attributes = append.attributes)
                     }
                     
                 }
@@ -2513,6 +2627,56 @@ JHEEM.DATA.MANAGER = R6::R6Class(
         {
             private$do.unhash(arr, private$i.details.list)
         },
+
+        get.metadata.fields = function()
+        {
+            names(private$i.metadata.fields)
+        },
+
+        # Returns a data frame with one row per record and one column per registered field (plus 'id').
+        # Fields with several values are collapsed with "__"; fields a record lacks are NA
+        get.metadata.records = function(ids = NULL)
+        {
+            if (is.null(ids)) ids = seq_along(private$i.metadata.records)
+            ids = as.integer(ids)
+            if (any(is.na(ids)) || any(ids < 1) || any(ids > length(private$i.metadata.records)))
+                stop("Cannot get metadata records: 'ids' must be valid record IDs for this data manager")
+
+            rv = data.frame(id = ids)
+            for (field in names(private$i.metadata.fields)) {
+                rv[[field]] = vapply(private$i.metadata.records[ids], function(record) {
+                    if (is.null(record[[field]])) NA_character_ else paste(record[[field]], collapse = "__")
+                }, character(1))
+            }
+            rv
+        },
+
+        # Takes an array (or list array) whose elements are vectors of record IDs and returns a character array of the same dimensions,
+        # where each element is the sorted, unique values of 'field' across those records, collapsed with 'collapse'.
+        # Elements with no IDs, or whose records all lack the field, are NA
+        resolve.metadata = function(id.array, field, collapse = "__")
+        {
+            if (!is.character(field) || length(field)!=1 || !(field %in% names(private$i.metadata.fields)))
+                stop("Cannot resolve metadata: 'field' must be the name of a single registered metadata field")
+
+            cache = new.env()
+            rv = vapply(seq_along(id.array), function(i) {
+                ids = unlist(id.array[[i]])
+                ids = sort(unique(ids[!is.na(ids)]))
+                if (length(ids) == 0) return(NA_character_)
+
+                cache.index = paste(ids, collapse = "_")
+                if (!is.null(cache[[cache.index]])) return(cache[[cache.index]])
+
+                values = sort(unique(unlist(lapply(private$i.metadata.records[ids], function(record) {record[[field]]}))))
+                resolved = if (length(values) == 0) NA_character_ else paste(values, collapse = collapse)
+                cache[[cache.index]] = resolved
+                resolved
+            }, character(1))
+            dim(rv) = dim(id.array)
+            dimnames(rv) = dimnames(id.array)
+            rv
+        },
         
         inspect_marginals = function(outcome=NULL,
                                      source=NULL,
@@ -2662,6 +2826,38 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             else
                 stop("Cannot modify 'details.list' in jheem.data.manager - it is read-only")
         },
+
+        metadata = function(value)
+        {
+            if (missing(value))
+                private$i.metadata
+            else
+                stop("Cannot modify 'metadata' in jheem.data.manager - it is read-only")
+        },
+
+        metadata.fields = function(value)
+        {
+            if (missing(value))
+                private$i.metadata.fields
+            else
+                stop("Cannot modify 'metadata.fields' in jheem.data.manager - it is read-only")
+        },
+
+        metadata.records = function(value)
+        {
+            if (missing(value))
+                private$i.metadata.records
+            else
+                stop("Cannot modify 'metadata.records' in jheem.data.manager - it is read-only")
+        },
+
+        metadata.keys = function(value)
+        {
+            if (missing(value))
+                private$i.metadata.keys
+            else
+                stop("Cannot modify 'metadata.keys' in jheem.data.manager - it is read-only")
+        },
         
         outcome.info = function(value)
         {
@@ -2724,6 +2920,13 @@ JHEEM.DATA.MANAGER = R6::R6Class(
         i.details = NULL,
         i.url.list = NULL,
         i.details.list = NULL,
+        
+        # And the new structures for metadata
+        # (i.url and i.details are still written by put() so that saved data managers stay readable by older code, but pull() uses only i.metadata)
+        i.metadata.fields  = NULL,  # named logical vector; names are the allowed field names (e.g. "url","details","author"), values are whether the field is required
+        i.metadata.records = NULL,  # list; element k is record k, a named list of sorted, unique character vectors (only the fields that put supplied)
+        i.metadata.keys    = NULL,  # character; canonical key for record k, used for dedupe via match()
+        i.metadata         = NULL,  # same nesting as i.url: [[outcome]][[metric]][[source]][[ont]][[strat]] -> integer array of record IDs
         
         #-- Metadata --#
         # These are named lists, with the names being the names of outcomes or data groups
@@ -2836,6 +3039,174 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             dim(new.arr) = dim(arr)
             dimnames(new.arr) = dimnames(arr)
             new.arr
+        },
+
+        #-- Metadata records --#
+
+        # Validates the metadata for one put and returns it as a record: a named list, in field-registration order, of sorted, unique character vectors.
+        # 'url' and 'details' may come from their own arguments; if they are also in 'metadata', the values must agree
+        normalize.metadata.record = function(metadata, url = NULL, details = NULL, error.prefix = '')
+        {
+            if (is.null(metadata)) metadata = list()
+            if (!is.list(metadata) || (length(metadata) > 0 && (is.null(names(metadata)) || any(is.na(names(metadata))) || any(names(metadata)==''))))
+                stop(paste0(error.prefix, "'metadata' must be NULL or a named list"))
+            if (any(duplicated(names(metadata))))
+                stop(paste0(error.prefix, "'metadata' cannot contain repeated names"))
+
+            # Fold in url and details from their own arguments
+            from.own.arguments = list(url = url, details = details)
+            for (field in names(from.own.arguments)) {
+                if (is.null(from.own.arguments[[field]])) next
+                if (!is.null(metadata[[field]]) && !setequal(as.character(metadata[[field]]), as.character(from.own.arguments[[field]])))
+                    stop(paste0(error.prefix, "'", field, "' was given both in its own argument and in 'metadata', with different values"))
+                metadata[[field]] = from.own.arguments[[field]]
+            }
+
+            unregistered.fields = setdiff(names(metadata), names(private$i.metadata.fields))
+            if (length(unregistered.fields) > 0)
+                stop(paste0(error.prefix, "'metadata' contains ", collapse.with.and("'", unregistered.fields, "'"),
+                            ", which ", ifelse(length(unregistered.fields)==1, "is not a registered field", "are not registered fields"),
+                            ". Call register.data.metadata.field() to register ", ifelse(length(unregistered.fields)==1, "it", "them")))
+
+            missing.required.fields = setdiff(names(private$i.metadata.fields)[private$i.metadata.fields], names(metadata))
+            if (length(missing.required.fields) > 0)
+                stop(paste0(error.prefix, "a value must be given for required metadata field", ifelse(length(missing.required.fields)==1, " ", "s "),
+                            collapse.with.and("'", missing.required.fields, "'")))
+
+            for (field in names(metadata)) {
+                values = metadata[[field]]
+                if (is.numeric(values)) values = as.character(values)
+                if (!is.character(values))
+                    stop(paste0(error.prefix, "'", field, "' must be a character vector"))
+                if (length(values)==0)
+                    stop(paste0(error.prefix, "'", field, "' must contain at least one value"))
+                if (any(is.na(values)))
+                    stop(paste0(error.prefix, "'", field, "' cannot contain NA values"))
+                if (any(nchar(values)==0))
+                    stop(paste0(error.prefix, "'", field, "' cannot contain empty values ('')"))
+                metadata[[field]] = sort(unique(values))
+            }
+
+            # Registration order, so that identical records always get identical keys
+            metadata[intersect(names(private$i.metadata.fields), names(metadata))]
+        },
+
+        # A string that is identical for two records exactly when the records are identical. The separators are control characters, which won't appear in real values
+        metadata.record.key = function(record)
+        {
+            paste(names(record), vapply(record, paste, character(1), collapse = "\u001f"), sep = "\u001e", collapse = "\u001d")
+        },
+
+        # Takes a normalized record and returns its integer ID, adding it to the records if it is new
+        get.or.add.metadata.record = function(record)
+        {
+            key = private$metadata.record.key(record)
+            id = match(key, private$i.metadata.keys)
+            if (is.na(id)) {
+                private$i.metadata.records = c(private$i.metadata.records, list(record))
+                private$i.metadata.keys = c(private$i.metadata.keys, key)
+                id = length(private$i.metadata.keys)
+            }
+            as.integer(id)
+        },
+
+        # Used when mapping or aggregating metadata in a pull: combines the record IDs of the cells being merged into one sorted vector.
+        # Missing (NA) points contribute nothing; if all points are missing, the result is NA
+        merge.metadata.ids = function(x, ...)
+        {
+            ids = unlist(x)
+            ids = sort(unique(as.integer(ids[!is.na(ids)])))
+            list(if (length(ids) > 0) ids else NA_integer_)
+        },
+
+        # At the end of a pull: turns the (list) array of record IDs into the requested attributes on 'result'.
+        # 'id.array' must have the same dimensions as 'result'. Cells where 'result' is NA get NA metadata
+        attach.metadata.attributes = function(result, id.array, append.attributes)
+        {
+            data.is.na = is.na(result)
+            ids = lapply(seq_along(id.array), function(i) {
+                if (data.is.na[[i]]) return(NA_integer_)
+                one.cell = unlist(id.array[[i]])
+                one.cell = sort(unique(as.integer(one.cell[!is.na(one.cell)])))
+                if (length(one.cell) == 0) NA_integer_ else one.cell
+            })
+            dim(ids) = dim(result)
+            dimnames(ids) = dimnames(result)
+
+            for (field in setdiff(append.attributes, 'metadata'))
+                attr(result, field) = self$resolve.metadata(ids, field)
+
+            if ('metadata' %in% append.attributes) {
+                used.ids = unlist(ids)
+                used.ids = sort(unique(used.ids[!is.na(used.ids)]))
+                attr(result, 'metadata.ids') = ids
+                attr(result, 'metadata') = self$get.metadata.records(used.ids)
+            }
+            result
+        },
+
+        # For data managers created before metadata records existed: makes one record per distinct (url, details) pair and
+        # builds i.metadata from i.url and i.details
+        build.metadata.from.url.and.details = function()
+        {
+            private$i.metadata = list()
+            private$i.metadata.fields = DATA.MANAGER.DEFAULT.METADATA.FIELDS
+            private$i.metadata.records = list()
+            private$i.metadata.keys = character(0)
+
+            # the hashed url and details strings were made by pasting values with "__"
+            split.hashed = function(hashed) {
+                values = strsplit(hashed, "__", fixed = T)[[1]]
+                values = values[nchar(values) > 0]
+                if (length(values) == 0) hashed else values
+            }
+
+            pair.cache = new.env()
+            n.skipped = 0
+            for (outcome in names(private$i.data)) {
+                for (metric in names(private$i.data[[outcome]])) {
+                    for (source in names(private$i.data[[outcome]][[metric]])) {
+                        for (ont in names(private$i.data[[outcome]][[metric]][[source]])) {
+                            for (strat in names(private$i.data[[outcome]][[metric]][[source]][[ont]])) {
+
+                                strat.data = private$i.data[[outcome]][[metric]][[source]][[ont]][[strat]]
+                                url.ids = private$i.url[[outcome]][[metric]][[source]][[ont]][[strat]]
+                                details.ids = private$i.details[[outcome]][[metric]][[source]][[ont]][[strat]]
+
+                                record.ids = array(NaN, dim(strat.data), dimnames(strat.data))
+
+                                # The url and details should be numeric arrays of hashes; anything else is from a format we can't convert
+                                if (!is.numeric(url.ids) || !is.numeric(details.ids) || length(url.ids) != length(strat.data) || length(details.ids) != length(strat.data)) {
+                                    n.skipped = n.skipped + 1
+                                    private$i.metadata[[outcome]][[metric]][[source]][[ont]][[strat]] = record.ids
+                                    next
+                                }
+
+                                has.both = which(!is.na(url.ids) & !is.na(details.ids))
+                                pair.keys = paste(url.ids[has.both], details.ids[has.both], sep = "_")
+                                for (pair in unique(pair.keys)) {
+                                    id = pair.cache[[pair]]
+                                    if (is.null(id)) {
+                                        hashes = as.integer(strsplit(pair, "_", fixed = T)[[1]])
+                                        record = private$normalize.metadata.record(list(url = split.hashed(private$i.url.list[[hashes[1]]]),
+                                                                                        details = split.hashed(private$i.details.list[[hashes[2]]])))
+                                        id = private$get.or.add.metadata.record(record)
+                                        pair.cache[[pair]] = id
+                                    }
+                                    record.ids[has.both[pair.keys == pair]] = id
+                                }
+
+                                private$i.metadata[[outcome]][[metric]][[source]][[ont]][[strat]] = record.ids
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (n.skipped > 0)
+                warning(paste0("While building metadata records for data manager '", private$i.name, "', ", n.skipped,
+                               " stratification", ifelse(n.skipped==1, " had", "s had"), " url or details in an unrecognized format; ",
+                               "those data points will have no metadata"))
         },
         
         do.aggregation = function(pre.agg.dimnames,
@@ -2966,13 +3337,12 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                                                    na.rm)
             
             mapped.metadata <- lapply(append.attributes.data, function(metadata.to.process) {
-                function.to.apply = function(x) {list(unique(unlist(x)))}
                 mapped.metadata.this.type <- mapping.to.apply$apply(metadata.to.process,
                                                                     na.rm=na.rm,
                                                                     to.dim.names=dimnames.for.apply,
-                                                                    fun = function.to.apply)
-                
-                # We might need to subset details or url if the 'data' was unexpectedly subset due to denominator data for a proportion having fewer years or locations
+                                                                    fun = private$merge.metadata.ids)
+
+                # We might need to subset the metadata if the 'data' was unexpectedly subset due to denominator data for a proportion having fewer years or locations
                 if (outcome.info$metadata$scale %in% c("rate", "time", "proportion", "ratio") || metric =="coefficient.of.variance")
                     mapped.metadata.this.type <- array.access(mapped.metadata.this.type, dimnames(mapped.data))
                 mapped.metadata.this.type
