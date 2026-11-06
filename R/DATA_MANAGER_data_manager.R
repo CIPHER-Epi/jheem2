@@ -3040,6 +3040,14 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             uni
         },
         do.unhash = function(arr, hash.list) {
+            # A stored url or details array holds one hash per cell (NaN where there is no data), so one lookup unhashes it all
+            if (!is.list(arr)) {
+                new.arr = hash.list[as.integer(arr)]
+                dim(new.arr) = dim(arr)
+                dimnames(new.arr) = dimnames(arr)
+                return(new.arr)
+            }
+
             # We will take hashed vectors like c(1,3) and unhash each member
             # and also un-collapse components like "first__second" by "__" char.
             # Then we will sort/unique them and check if it matches any. If does,
@@ -3050,7 +3058,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             new.arr = sapply(arr, function(hashed.vector) {
                 # ignore any with NA because this implies that the corresponding
                 # data point becomes NA in the mapping that was applied
-                hashed.vector <- sort(unique(unlist(hashed.vector)))
+                hashed.vector <- sort(unique(unlist(hashed.vector)), na.last = TRUE) # keep NA and NaN so the check below sees them
                 if (any(is.na(hashed.vector))) NA
                 else {
                     # skip a step if we have cached this combo
