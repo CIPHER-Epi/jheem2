@@ -412,6 +412,7 @@ put.data.long.form <- function(data.manager = get.default.data.manager(),
 #'@param allow.mapping.from.target.ontology A logical indicator. If TRUE, if target.ontology is specified, but the data manager does not have data that can be mapped to the target ontology, it will search for data such that an ontology.mapping can be applied to data in the target.ontology that make those data align with the data pulled
 #'@param from.ontology.names The names of the ontologies from which to pull data (if available). If NULL, will pull from all ontologies that have any relevant data and can be mapped to the requested ontology. Must refer to ontologies previously registered to this data manager with \code{\link{register.data.ontology}}
 #'@param append.attributes A character vector indicating requested data attributes to include with the result. May contain "url", "details", the name of any other registered metadata field, and/or "metadata"
+#'@param metadata.collapse A single character value used to separate multiple metadata values (eg several URLs) within one element of the appended attributes. Defaults to " | ", which cannot appear in a valid URL. Use "__" to get the separator used before this argument existed
 #'
 #'@param na.rm Whether to disregard NA values when aggregating out dimensions not in keep.dimensions
 #'@param ignore.ontologies.without.requested.locations If 'dimension.values' includes a location dimension, should ontologies that don't have any of those locations for the requested outcome be ignored? See detailed documentation about how ontologies factor into the output. (NOT YET WRITTEN)
@@ -420,8 +421,8 @@ put.data.long.form <- function(data.manager = get.default.data.manager(),
 #'@return A numeric array with named dimnames, with one dimension for each value of 'keep.dimensions', plus an additional dimension, "source" at the beginning, with one value for each source from which data were pulled
 #' The return value may have several attributes:
 #' (1) If target.ontology is not-NULL and allow.mapping.from.target.ontology==T, 'ontology.mapping' with refer to an ontology.mapping object that can be applied to data in the target.ontology to make them align with the returned array
-#' (2) If append.attributes includes "url", an array with the same dimensions as the returned array, where each element is one or more URLs separated by "__"
-#' (3) If append.attributes includes "details", an with the same dimensions as the returned array, where each element is one or more details about data collection separated by "__"
+#' (2) If append.attributes includes "url", an array with the same dimensions as the returned array, where each element is one or more URLs separated by 'metadata.collapse'
+#' (3) If append.attributes includes "details", an array with the same dimensions as the returned array, where each element is one or more details about data collection separated by 'metadata.collapse'
 #' (4) For any other metadata field named in append.attributes (eg "author"), a character array of the same form as for "url"
 #' (5) If append.attributes includes "metadata", 'metadata.ids', a list array with the same dimensions as the returned array where each element is an integer vector of metadata record IDs (NA where the data are NA),
 #'     and 'metadata', a data frame of the records those IDs refer to (as returned by the data manager's get.metadata.records() method)
@@ -439,6 +440,7 @@ pull.data <- function(data.manager = get.default.data.manager(),
                       target.ontology = NULL,
                       allow.mapping.from.target.ontology = T,
                       append.attributes = NULL,
+                      metadata.collapse = " | ",
                       append.metrics = NULL,
                       allow.other.sources.for.denominator = F,
                       na.rm = F,
@@ -459,6 +461,7 @@ pull.data <- function(data.manager = get.default.data.manager(),
                       target.ontology = target.ontology,
                       allow.mapping.from.target.ontology = allow.mapping.from.target.ontology,
                       append.attributes = append.attributes,
+                      metadata.collapse = metadata.collapse,
                       append.metrics = append.metrics,
                       allow.other.sources.for.denominator = allow.other.sources.for.denominator,
                       na.rm = na.rm,
@@ -1903,6 +1906,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                         target.ontology = NULL,
                         allow.mapping.from.target.ontology = T,
                         append.attributes = NULL,
+                        metadata.collapse = " | ",
                         append.metrics = NULL,
                         allow.other.sources.for.denominator = F,
                         na.rm = F,
@@ -1998,6 +2002,10 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                 if (!is.null(append.attributes) && (!is.character(append.attributes) || anyNA(append.attributes) || !all(append.attributes %in% c(names(private$i.metadata.fields), "metadata"))))
                     stop(paste0(error.prefix, "append.attributes' must be either NULL or a character vector with no NA values that contains only registered metadata fields (",
                                 collapse.with.and("'", names(private$i.metadata.fields), "'"), ") or 'metadata'"))
+
+                # *metadata.collapse* is a single, non-NA character value
+                if (!is.character(metadata.collapse) || length(metadata.collapse)!=1 || is.na(metadata.collapse))
+                    stop(paste0(error.prefix, "'metadata.collapse' must be a single, non-NA character value"))
                 
                 # *na.rm* is a single, non-NA logical value
                 if (!is.logical(na.rm) || length(na.rm)!=1 || is.na(na.rm))
@@ -2298,7 +2306,8 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                     } else if (data.type == 'metadata') {
                         post.processed.data = private$attach.metadata.attributes(post.processed.data,
                                                                                  id.array = return.for.this.data.type,
-                                                                                 append.attributes = append.attributes)
+                                                                                 append.attributes = append.attributes,
+                                                                                 collapse = metadata.collapse)
                     }
                     
                 }
@@ -2318,6 +2327,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                    target.ontology = NULL,
                                    allow.mapping.from.target.ontology = T,
                                    append.attributes = NULL,
+                                   metadata.collapse = " | ",
                                    allow.other.sources.for.denominator = F,
                                    na.rm = F,
                                    check.arguments = T,
@@ -2341,6 +2351,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                target.ontology = target.ontology,
                                allow.mapping.from.target.ontology = allow.mapping.from.target.ontology,
                                append.attributes = append.attributes,
+                               metadata.collapse = metadata.collapse,
                                allow.other.sources.for.denominator = allow.other.sources.for.denominator,
                                na.rm = na.rm,
                                check.arguments = check.arguments,
@@ -2348,6 +2359,10 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                ...)
             }
             else {
+                # To give the restratified brackets their metadata, we map the record IDs to the new brackets along with the data,
+                #  so the pulls below always ask for 'metadata' (which carries the IDs) when any attribute is requested
+                pull.attributes = if (length(append.attributes) > 0) union(append.attributes, 'metadata') else NULL
+
                 rv = tryCatch(
                     {self$pull(outcome = outcome,
                                metric = metric,
@@ -2358,7 +2373,8 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                exclude.ontology.names = exclude.ontology.names,
                                target.ontology = target.ontology,
                                allow.mapping.from.target.ontology = allow.mapping.from.target.ontology,
-                               append.attributes = append.attributes,
+                               append.attributes = pull.attributes,
+                               metadata.collapse = metadata.collapse,
                                allow.other.sources.for.denominator = allow.other.sources.for.denominator,
                                na.rm = na.rm,
                                check.arguments = check.arguments,
@@ -2378,7 +2394,8 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                    exclude.ontology.names = exclude.ontology.names,
                                    target.ontology = target.ontology,
                                    allow.mapping.from.target.ontology = allow.mapping.from.target.ontology,
-                                   append.attributes = append.attributes,
+                                   append.attributes = pull.attributes,
+                                   metadata.collapse = metadata.collapse,
                                    allow.other.sources.for.denominator = allow.other.sources.for.denominator,
                                    na.rm = na.rm,
                                    check.arguments = check.arguments,
@@ -2388,8 +2405,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                 if (is.null(rv)) return (rv)
                 
                 # check rv scale?
-                url = attr(rv, 'url')
-                details = attr(rv, 'details')
+                metadata.ids = attr(rv, 'metadata.ids')
                 pulled.mapping = attr(rv, 'mapping')
                 # will need to transform a numerator and denominator to pass in to restratify age counts for proportions
                 restratified.data = restratify.age.counts(counts = rv,
@@ -2400,12 +2416,22 @@ JHEEM.DATA.MANAGER = R6::R6Class(
                                                           method = method,
                                                           error.prefix = "error restratifying age counts in age robust pull: ") #set
                 restratify.mapping = attr(restratified.data, 'mapping')
-                # I'll need to use the mapping returned as an attr on the above to map details and url
-                attr(restratified.data, 'mapping') = attr(rv, 'mapping')
-                if (any(append.attributes)=='url')
-                    attr(restratified.data, 'url') = restratify.mapping$apply(url)
-                if (any(append.attributes)=='details')
-                    attr(restratified.data, 'details') = restratify.mapping$apply(details)
+                attr(restratified.data, 'mapping') = pulled.mapping
+
+                # Map the record IDs to the new age brackets (each new bracket gets the records of every old bracket that overlaps it),
+                #  then resolve the requested attributes from them
+                for (metadata.attr in c(names(private$i.metadata.fields), 'metadata.ids', 'metadata'))
+                    attr(restratified.data, metadata.attr) = NULL
+                if (length(append.attributes) > 0) {
+                    restratified.ids = restratify.mapping$apply(metadata.ids,
+                                                                to.dim.names = dimnames(restratified.data),
+                                                                fun = private$merge.metadata.ids,
+                                                                na.rm = T)
+                    restratified.data = private$attach.metadata.attributes(restratified.data,
+                                                                           id.array = restratified.ids,
+                                                                           append.attributes = append.attributes,
+                                                                           collapse = metadata.collapse)
+                }
                 #  if (!is.null(pulled.mapping)) attr(restratified.data, 'mapping') = pulled.mapping # NOT TRUE ANYMORE... (? what did I write this for?)
                 rv = restratified.data
             }
@@ -2634,8 +2660,8 @@ JHEEM.DATA.MANAGER = R6::R6Class(
         },
 
         # Returns a data frame with one row per record and one column per registered field (plus 'id').
-        # Fields with several values are collapsed with "__"; fields a record lacks are NA
-        get.metadata.records = function(ids = NULL)
+        # Fields with several values are collapsed with 'collapse'; fields a record lacks are NA
+        get.metadata.records = function(ids = NULL, collapse = " | ")
         {
             if (is.null(ids)) ids = seq_along(private$i.metadata.records)
             ids = as.integer(ids)
@@ -2645,7 +2671,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             rv = data.frame(id = ids)
             for (field in names(private$i.metadata.fields)) {
                 rv[[field]] = vapply(private$i.metadata.records[ids], function(record) {
-                    if (is.null(record[[field]])) NA_character_ else paste(record[[field]], collapse = "__")
+                    if (is.null(record[[field]])) NA_character_ else paste(record[[field]], collapse = collapse)
                 }, character(1))
             }
             rv
@@ -2654,7 +2680,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
         # Takes an array (or list array) whose elements are vectors of record IDs and returns a character array of the same dimensions,
         # where each element is the sorted, unique values of 'field' across those records, collapsed with 'collapse'.
         # Elements with no IDs, or whose records all lack the field, are NA
-        resolve.metadata = function(id.array, field, collapse = "__")
+        resolve.metadata = function(id.array, field, collapse = " | ")
         {
             if (!is.character(field) || length(field)!=1 || !(field %in% names(private$i.metadata.fields)))
                 stop("Cannot resolve metadata: 'field' must be the name of a single registered metadata field")
@@ -3121,7 +3147,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
 
         # At the end of a pull: turns the (list) array of record IDs into the requested attributes on 'result'.
         # 'id.array' must have the same dimensions as 'result'. Cells where 'result' is NA get NA metadata
-        attach.metadata.attributes = function(result, id.array, append.attributes)
+        attach.metadata.attributes = function(result, id.array, append.attributes, collapse = " | ")
         {
             data.is.na = is.na(result)
             ids = lapply(seq_along(id.array), function(i) {
@@ -3134,13 +3160,13 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             dimnames(ids) = dimnames(result)
 
             for (field in setdiff(append.attributes, 'metadata'))
-                attr(result, field) = self$resolve.metadata(ids, field)
+                attr(result, field) = self$resolve.metadata(ids, field, collapse = collapse)
 
             if ('metadata' %in% append.attributes) {
                 used.ids = unlist(ids)
                 used.ids = sort(unique(used.ids[!is.na(used.ids)]))
                 attr(result, 'metadata.ids') = ids
-                attr(result, 'metadata') = self$get.metadata.records(used.ids)
+                attr(result, 'metadata') = self$get.metadata.records(used.ids, collapse = collapse)
             }
             result
         },
