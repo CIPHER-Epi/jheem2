@@ -3050,7 +3050,7 @@ JHEEM.DATA.MANAGER = R6::R6Class(
             new.arr = sapply(arr, function(hashed.vector) {
                 # ignore any with NA because this implies that the corresponding
                 # data point becomes NA in the mapping that was applied
-                hashed.vector <- sort(unique(unlist(hashed.vector)))
+                hashed.vector <- sort(unique(unlist(hashed.vector)), na.last = TRUE) # keep NA and NaN so the check below sees them
                 if (any(is.na(hashed.vector))) NA
                 else {
                     # skip a step if we have cached this combo

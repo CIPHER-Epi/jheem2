@@ -172,4 +172,12 @@ restratified.no.attributes = dm$pull.age.robust('new', keep.dimensions = 'age', 
 check("no metadata attributes when none are requested",
       length(intersect(names(attributes(restratified.no.attributes)), c('url', 'details', 'metadata.ids', 'metadata'))), 0L)
 
+#-- 8. Unhashing a stored url array leaves missing cells NA (stored arrays mark them NaN) --#
+stored.url = dm$url$new$estimate$cdc$ont$location__year__sex
+stored.url[1] = NaN
+unhashed = dm$unhash.url(stored.url)
+check("a NaN cell unhashes to NA", is.na(unhashed[1]), TRUE)
+check("the other cells still unhash", all(grepl("^http", unhashed[-1][!is.na(stored.url[-1])])) && any(!is.na(stored.url[-1])), TRUE)
+check("unhashing keeps the shape of the array", dim(unhashed), dim(stored.url))
+
 cat("All metadata aggregation tests passed\n")
