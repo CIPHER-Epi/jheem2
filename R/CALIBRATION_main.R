@@ -649,6 +649,13 @@ set.up.calibration <- function(version,
         cache.frequency = cache.frequency,
         allow.overwrite.cache = allow.overwrite.cache)
     
+    #-- Record the data managers in use (see get.data.inputs) --#
+    tryCatch(write.data.inputs.dcf(make.data.inputs.record(passed.data.manager = calibration.info$data.manager),
+                                   dir = calibration.dir),
+             error = function(e){
+                 warning(paste0(error.prefix, "could not record the data inputs in '", calibration.dir, "': ",
+                                conditionMessage(e)))
+             })
     
     if (verbose)
         print(paste0(verbose.prefix, "All Done!"))

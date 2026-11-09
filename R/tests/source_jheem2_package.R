@@ -64,6 +64,7 @@ Rcpp::sourceCpp('../jheem2/src/simulation_helpers.cpp')
 
 source('../jheem2/R/DATA_MANAGER_data_manager.R')
 source('../jheem2/R/DATA_MANAGER_provenance.R')
+source('../jheem2/R/DATA_MANAGER_data_inputs.R')
 source('../jheem2/R/PLOTS_simplot.R')
 source('../jheem2/R/PLOTS_plot_simulations.R')
 source('../jheem2/R/PLOTS_style_manager.R')
