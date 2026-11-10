@@ -72,6 +72,12 @@ set.up.calibration <- function(version,
                                             throw.error.if.missing = T,
                                             error.prefix = error.prefix)
     
+    # Under a data binding, set up with it and record the names used (see DATA_MANAGER_binding.R)
+    data.binding.frame = enter.data.binding.frame(label = paste0("calibration '", calibration.code, "'"),
+                                                  error.prefix = error.prefix)
+    on.exit(exit.data.binding.frame(data.binding.frame), add = TRUE)
+    calibration.data.manager = resolve.calibration.data.manager(calibration.info)
+    
     spec = get.compiled.specification.for.version(version)
     if (calibration.info$draw.from.parent.version)
     {
@@ -485,7 +491,7 @@ set.up.calibration <- function(version,
     likelihood = lik.instr$instantiate.likelihood(version = version,
                                                   location = location,
                                                   sub.version = sub.version,
-                                                  data.manager = calibration.info$data.manager)
+                                                  data.manager = calibration.data.manager)
 
     compute.likelihood <- function(sim) {
         lik = likelihood$compute(sim=sim, log=T, use.optimized.get=T, check.consistency=F)
@@ -650,7 +656,8 @@ set.up.calibration <- function(version,
         allow.overwrite.cache = allow.overwrite.cache)
     
     #-- Record the data managers in use (see get.data.inputs) --#
-    tryCatch(write.data.inputs.dcf(make.data.inputs.record(passed.data.manager = calibration.info$data.manager),
+    tryCatch(write.data.inputs.dcf(make.data.inputs.record(passed.data.manager = calibration.data.manager,
+                                                           data.binding.frame = data.binding.frame),
                                    dir = calibration.dir),
              error = function(e){
                  warning(paste0(error.prefix, "could not record the data inputs in '", calibration.dir, "': ",
@@ -1558,7 +1565,9 @@ OLD.assemble.simulations.from.calibration <- function(version,
 #'@param solver.metadata
 #'@param n.chains
 #'@param n.burn
-#'@param data.manager
+#'@param data.manager The data manager the likelihood is instantiated with, or its name in the data
+#' binding. Under a binding, a data manager bound under a name is stored as that name, and the name
+#' is resolved in the binding active when the calibration is set up
 #'@param preceding.calibration.codes
 #'@param draw.from.parent.version
 #'@param weight.to.preceding.variance.estimates
@@ -1693,6 +1702,7 @@ register.calibration.info <- function(code,
         likelihood.instructions = likelihood.instructions,
         special.case.likelihood.instructions = special.case.likelihood.instructions,
         data.manager = data.manager,
+        data.manager.name = calibration.data.manager.name(data.manager, error.prefix), # see DATA_MANAGER_binding.R
         end.year = end.year,
         parameter.names = parameter.names,
         parameter.aliases = parameter.aliases,

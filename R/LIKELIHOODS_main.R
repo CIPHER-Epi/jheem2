@@ -7,7 +7,7 @@ LIKELIHOOD.CLASS.GENERATORS <- new.env()
 
 #' @title Instantiate Likelihood
 #' @inheritParams jheem2-likelihood-params
-#' @param data.manager A jheem.data.manager object. May be NULL for Bernoulli likelihood instructions.
+#' @param data.manager A jheem.data.manager object, or the name of one in the active data binding (see \code{\link{get.data.manager}}). May be NULL for Bernoulli likelihood instructions.
 #' @param throw.error.if.no.data Should an error be thrown if no relevant data is found?
 #' @param verbose Should detailed messages be printed out as we go
 #' @export
@@ -162,7 +162,18 @@ do.instantiate.likelihood <- function(instructions,
     if (!(instructions$outcome.for.sim %in% simulation.metadata$outcomes)) {
         stop(paste0(error.prefix, "likelihood instructions' 'outcome.for.sim' must be a registered outcome in the specification"))
     }
-    
+
+    # Under a data binding: instructions must come from the same binding, a name resolves in it, and
+    # the names used are recorded (see DATA_MANAGER_binding.R)
+    check.instructions.data.binding(instructions, error.prefix)
+    data.binding.frame = enter.data.binding.frame(label = paste0("the likelihood '", instructions$name, "'"),
+                                                  error.prefix = error.prefix)
+    on.exit(exit.data.binding.frame(data.binding.frame), add = TRUE)
+    if (is.character(data.manager))
+        data.manager = get.data.manager(data.manager)
+    else if (!is.null(data.binding.frame))
+        note.data.manager.use(data.binding.names.for(data.binding.frame$binding, data.manager))
+
     likelihood = likelihood.class.generator$new(
         instructions = instructions,
         version = version,
@@ -174,7 +185,8 @@ do.instantiate.likelihood <- function(instructions,
         throw.error.if.no.data = throw.error.if.no.data,
         error.prefix = error.prefix
     )
-    set.data.inputs(likelihood, make.data.inputs.record(passed.data.manager = data.manager))
+    set.data.inputs(likelihood, make.data.inputs.record(passed.data.manager = data.manager,
+                                                        data.binding.frame = data.binding.frame))
     likelihood
 }
 
@@ -255,6 +267,9 @@ JHEEM.LIKELIHOOD.INSTRUCTIONS <- R6::R6Class(
             }
             # Add this class generator to the environment
             LIKELIHOOD.CLASS.GENERATORS[[class(self)[1]]] = likelihood.class.generator
+            
+            # Values computed while creating instructions came from the active data binding's managers
+            private$i.data.binding.identity = capture.data.binding.identity()
         },
         instantiate.likelihood = function(version,
                                           location,
@@ -381,6 +396,7 @@ JHEEM.LIKELIHOOD.INSTRUCTIONS <- R6::R6Class(
         i.stratifications = NULL,
         i.weights = NULL,
         i.likelihood.class.generator = NULL,
+        i.data.binding.identity = NULL, # see check.instructions.data.binding()
         generate.stratifications = function(dimensions, levels.of.stratification) {
             levels.of.stratification <- as.integer(levels.of.stratification)
             output.stratifications <- list()
