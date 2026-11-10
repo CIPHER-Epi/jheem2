@@ -164,6 +164,9 @@ stopifnot(identical(mortality.rate(run.toy("toy.undecl")), 0.02))
 
 #-- The session binding --#
 set.data.binding(binding.b)
+now = get.data.inputs()
+stopifnot(identical(now$coverage, c("declared", "loaded", "bound")),
+          identical(bound.row(now, "census")$release, "census-b"), identical(bound.row(now, "census")$used, FALSE))
 stopifnot(identical(get.data.binding()$managers$census, census.b),
           identical(get.data.manager("census"), census.b),
           identical(sort(list.data.managers()$name), c("census", "syphilis")))

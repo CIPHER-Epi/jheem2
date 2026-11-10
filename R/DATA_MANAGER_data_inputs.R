@@ -42,7 +42,7 @@ DATA.INPUTS.FORMAT = 'jheem2 data inputs 1'
 #'
 #'@param x A jheem.kernel, jheem.likelihood, or jheem.simulation.set, or the path of a
 #' calibration directory or of the data_inputs.dcf file in one. If missing, the record an
-#' artifact built now would get.
+#' artifact built now would get (under a data binding, with no names used yet).
 #'
 #'@return NULL if nothing was recorded (for example, for artifacts built by earlier versions of
 #' jheem2). Otherwise a list with
@@ -66,7 +66,11 @@ get.data.inputs <- function(x)
 {
     error.prefix = "Cannot get.data.inputs(): "
     if (missing(x))
-        return (make.data.inputs.record())
+    {
+        binding = get.data.binding()
+        return (make.data.inputs.record(data.binding.frame = if (is.null(binding)) NULL
+                                                            else list(binding = binding, used = character())))
+    }
 
     if (is.character(x) && length(x) == 1 && !is.na(x))
     {
