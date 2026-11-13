@@ -25,3 +25,10 @@ set.up.calibration(
 \description{
 Set Up Calibration
 }
+\details{
+The calibration's control saves the functions a chain calls. By default they keep
+everything this function built, including the calibration's data manager. With
+\code{options(jheem2.lean.calibration.controls = TRUE)} they keep only what a chain uses (the
+engine and the instantiated likelihood, which holds the data it pulled), and the data manager is
+kept only if it was not loaded from a release. Chains are the same either way.
+}
