@@ -7,7 +7,8 @@
 # get.data.manager.provenance(), which returns NULL for managers that have none.
 #
 # The registry lets code refer to data managers by name, for example "census",
-# rather than through a global variable. Nothing in jheem2 consults it yet.
+# rather than through a global variable. It is also the session's data binding
+# (see DATA_MANAGER_binding.R).
 
 # Keep registrations when this file is sourced again.
 if (!exists('DATA.MANAGER.REGISTRY'))
@@ -64,17 +65,24 @@ register.data.manager <- function(name, data.manager)
     invisible(data.manager)
 }
 
-#'@title Get a registered data manager
+#'@title Get a data manager by name
 #'
-#'@param name The name it was registered under
+#'@description With a data binding active (see \code{\link{get.data.binding}}), the data manager
+#' bound to the name, and the name is recorded as used by any model object being built.
+#' Otherwise, the data manager registered under the name.
 #'
-#'@return The jheem.data.manager registered under that name
+#'@param name The name it was bound or registered under
+#'
+#'@return A jheem.data.manager
 #'
 #'@export
 get.data.manager <- function(name)
 {
     error.prefix = "Cannot get.data.manager(): "
     check.data.manager.name(name, error.prefix)
+    bound = resolve.bound.data.manager(name, error.prefix)
+    if (!is.null(bound))
+        return (bound)
     if (!exists(name, envir = DATA.MANAGER.REGISTRY, inherits = F))
     {
         registered = sort(ls(DATA.MANAGER.REGISTRY))

@@ -7,8 +7,14 @@
 create.jheem.kernel <- function(version, location)
 {
     specification = get.compiled.specification.for.version(version)
+    # Under a data binding, build with it and record the names used (see DATA_MANAGER_binding.R)
+    data.binding.frame = enter.data.binding.frame(label = paste0("version '", version, "'"),
+                                                  declared = get.declared.data.managers(version),
+                                                  error.prefix = paste0("Cannot create the kernel for version '", version,
+                                                                        "' and location '", location, "': "))
+    on.exit(exit.data.binding.frame(data.binding.frame), add = TRUE)
     kernel = specification$get.jheem.kernel(location = location)
-    set.data.inputs(kernel, make.data.inputs.record())
+    set.data.inputs(kernel, make.data.inputs.record(data.binding.frame = data.binding.frame))
     kernel
 }
 
