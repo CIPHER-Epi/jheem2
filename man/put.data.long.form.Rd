@@ -14,8 +14,9 @@ put.data.long.form(
   source,
   ontology.name,
   dimension.values = NULL,
-  url,
-  details,
+  url = NULL,
+  details = NULL,
+  metadata = NULL,
   allow.na.to.overwrite = F,
   dimension.values.to.distribute = list(),
   allow.distributing.on.proportion.scale = F,
@@ -42,6 +43,8 @@ put.data.long.form(
 \item{url}{A character vector with at least one element giving one or more URLs indicating where the data derive from}
 
 \item{details}{A character vector with at least one element giving one or more URLs giving data collection details. In general, data collected and tabulated using the same approach should have the same details, whereas data with different methods/tabulation should have different details}
+
+\item{metadata}{A named list of metadata describing every data point in this put, such as list(url=..., details=..., author="CDC", year="2021"). Names must be fields registered with \code{\link{register.data.metadata.field}} ("url" and "details" are always registered). Each element must be a character (or numeric) vector with no NA or empty values. 'url' and 'details' may be given here or in their own arguments, but not both with different values}
 
 \item{allow.na.to.overwrite}{A logical indicator for whether NA values in data should be allowed to overwrite previous values put to the data manager (if data have been put previously)}
 

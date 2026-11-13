@@ -12,7 +12,31 @@ Description: The engine for the JHEEM (Joint HIV Epidemiology and Economic
     data ontologies, define interventions, and calibrate models to data via
     likelihoods.
 License: GPL (>= 2)
-Imports: Rcpp (>= 1.0.10), reshape2, deSolve, ggplot2, locations, ggsci, plotly, ungroup
+Imports:
+    Rcpp (>= 1.0.10),
+    R6,
+    bayesian.simulations,
+    codetools,
+    deSolve,
+    distributions,
+    ggnewscale,
+    ggplot2,
+    ggsci,
+    locations,
+    methods,
+    mvtnorm,
+    plotly,
+    reshape2,
+    scales,
+    stats,
+    stringr,
+    tools,
+    ungroup,
+    utils
+Remotes:
+    tfojo1/bayesian.simulations,
+    tfojo1/distributions,
+    tfojo1/locations
 LinkingTo: Rcpp
 RoxygenNote: 7.3.2
 Depends: 

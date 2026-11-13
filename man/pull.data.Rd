@@ -16,6 +16,7 @@ pull.data(
   target.ontology = NULL,
   allow.mapping.from.target.ontology = T,
   append.attributes = NULL,
+  metadata.collapse = " | ",
   append.metrics = NULL,
   allow.other.sources.for.denominator = F,
   na.rm = F,
@@ -44,7 +45,9 @@ pull.data(
 
 \item{allow.mapping.from.target.ontology}{A logical indicator. If TRUE, if target.ontology is specified, but the data manager does not have data that can be mapped to the target ontology, it will search for data such that an ontology.mapping can be applied to data in the target.ontology that make those data align with the data pulled}
 
-\item{append.attributes}{A character vector indicating requested data attributes to include with the result. May be either "details", "url", or both}
+\item{append.attributes}{A character vector indicating requested data attributes to include with the result. May contain "url", "details", the name of any other registered metadata field, and/or "metadata"}
+
+\item{metadata.collapse}{A single character value used to separate multiple metadata values (eg several URLs) within one element of the appended attributes. Defaults to " | ", which cannot appear in a valid URL. Use "__" to get the separator used before this argument existed}
 
 \item{na.rm}{Whether to disregard NA values when aggregating out dimensions not in keep.dimensions}
 
@@ -58,8 +61,12 @@ pull.data(
 A numeric array with named dimnames, with one dimension for each value of 'keep.dimensions', plus an additional dimension, "source" at the beginning, with one value for each source from which data were pulled
 The return value may have several attributes:
 (1) If target.ontology is not-NULL and allow.mapping.from.target.ontology==T, 'ontology.mapping' with refer to an ontology.mapping object that can be applied to data in the target.ontology to make them align with the returned array
-(2) If append.attributes includes "url", an array with the same dimensions as the returned array, where each element is one or more URLs separated by "__"
-(3) If append.attributes includes "details", an with the same dimensions as the returned array, where each element is one or more details about data collection separated by "__"
+(2) If append.attributes includes "url", an array with the same dimensions as the returned array, where each element is one or more URLs separated by 'metadata.collapse'
+(3) If append.attributes includes "details", an array with the same dimensions as the returned array, where each element is one or more details about data collection separated by 'metadata.collapse'
+(4) For any other metadata field named in append.attributes (eg "author"), a character array of the same form as for "url"
+(5) If append.attributes includes "metadata", 'metadata.ids', a list array with the same dimensions as the returned array where each element is an integer vector of metadata record IDs (NA where the data are NA),
+    and 'metadata', a data frame of the records those IDs refer to (as returned by the data manager's get.metadata.records() method)
+For all of these, an element is NA wherever the returned data are NA
 }
 \description{
 Pull data from a data manager

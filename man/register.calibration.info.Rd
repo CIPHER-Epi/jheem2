@@ -30,6 +30,10 @@ register.calibration.info(
 \arguments{
 \item{parameter.aliases}{A named list of character vectors. Each character vector must be one or more parameter names from the parameter distribution, and the names represent the aliases to be used in sampling}
 
+\item{data.manager}{The data manager the likelihood is instantiated with, or its name in the data
+binding. Under a binding, a data manager bound under a name is stored as that name, and the name
+is resolved in the binding active when the calibration is set up}
+
 \item{error.prefix}{}
 }
 \description{

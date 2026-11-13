@@ -16,6 +16,8 @@ simplot(
   plot.which = c("sim.and.data", "sim.only")[1],
   summary.type = c("individual.simulation", "mean.and.interval",
     "median.and.interval")[1],
+  omit.data.years = NULL,
+  data.na.rm = NULL,
   data.locations = NULL,
   label.function = NULL,
   plot.year.lag.ratio = F,
@@ -44,6 +46,10 @@ simplot(
 \item{dimension.values.post.mapping}{How to subset data in the form it will take after mappings have been applied to align sim and data ontologies. A list.}
 
 \item{plot.which}{Should simulation data and calibration data be plotted ('sim.and.data'), or only simulation data ('sim.only')}
+
+\item{omit.data.years}{Years to omit data, for example if data is available but wasn't calibrated to, while still showing simulation values for those years}
+
+\item{data.na.rm}{Sets na.rm = T or F during the data pull step. If NULL, will use T for rates, proportions, and ratios, and F for all other scales.}
 
 \item{data.locations}{Specifies locations for which to pull data. May be 1. NULL, in which case data locations will be inferred from the simsets' likelihoods, 2. a character vector of locations, or 3. a list of character vectors with outcomes as list names. For 3., outcomes not included will have their data locations inferred as in 1.}
 

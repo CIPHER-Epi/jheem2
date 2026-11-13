@@ -12,6 +12,7 @@ simplot.data.only(
   dimension.values = list(),
   dimension.values.post.mapping = list(),
   target.ontology = NULL,
+  data.na.rm = NULL,
   label.function = NULL,
   plot.year.lag.ratio = F,
   title = "location",
@@ -34,6 +35,8 @@ simplot.data.only(
 \item{facet.by}{Any number of dimensions but cannot include the split.by dimension}
 
 \item{dimension.values.post.mapping}{How to subset data in the form it will take after mappings have been applied to align sim and data ontologies. A list.}
+
+\item{data.na.rm}{Sets na.rm = T or F during the data pull step. If NULL, will use T for rates, proportions, and ratios, and F for all other scales.}
 
 \item{label.function}{A function to reformat labels. If NULL, will use the first provided simset's "get.labels" property, or will do no transformation if plotting data only.}
 
