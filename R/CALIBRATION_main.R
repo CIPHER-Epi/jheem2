@@ -646,6 +646,15 @@ set.up.calibration <- function(version,
     if (!dir.exists(calibration.dir))
         dir.create(calibration.dir, recursive = T)
     
+    # The control saved below keeps the functions above and, with them, this function's
+    # environment. Take the data inputs record now, then leave the binding frame and drop it,
+    # so the control does not carry the binding's data managers (see DATA_MANAGER_binding.R)
+    data.inputs.record = tryCatch(make.data.inputs.record(passed.data.manager = calibration.data.manager,
+                                                          data.binding.frame = data.binding.frame),
+                                  error = function(e) e)
+    exit.data.binding.frame(data.binding.frame)
+    data.binding.frame = NULL
+    
     bayesian.simulations::create.mcmc.cache(
         dir = calibration.dir,
         control = ctrl,
@@ -656,9 +665,11 @@ set.up.calibration <- function(version,
         allow.overwrite.cache = allow.overwrite.cache)
     
     #-- Record the data managers in use (see get.data.inputs) --#
-    tryCatch(write.data.inputs.dcf(make.data.inputs.record(passed.data.manager = calibration.data.manager,
-                                                           data.binding.frame = data.binding.frame),
-                                   dir = calibration.dir),
+    tryCatch({
+                 if (inherits(data.inputs.record, "error"))
+                     stop(data.inputs.record)
+                 write.data.inputs.dcf(data.inputs.record, dir = calibration.dir)
+             },
              error = function(e){
                  warning(paste0(error.prefix, "could not record the data inputs in '", calibration.dir, "': ",
                                 conditionMessage(e)))
