@@ -1,2 +1,9 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^R/tests$
+^R/beta_code$
+^R/production_tests$
+^code_for_building_package$
+^pull_refactor_notes$
+^\.github$
+^\.lintr$

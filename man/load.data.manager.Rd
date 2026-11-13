@@ -4,7 +4,13 @@
 \alias{load.data.manager}
 \title{Load a cached data manager}
 \usage{
-load.data.manager(file, name = NULL, description = NULL, set.as.default = F)
+load.data.manager(
+  file,
+  name = NULL,
+  description = NULL,
+  set.as.default = F,
+  provenance = NULL
+)
 }
 \arguments{
 \item{file}{A file storing a cached data manager object (only)}
@@ -14,6 +20,10 @@ load.data.manager(file, name = NULL, description = NULL, set.as.default = F)
 \item{description}{A description for the local data manager. If NULL, the description of the cached data manager.}
 
 \item{set.as.default}{Should the loaded data manager be set as the default data manager}
+
+\item{provenance}{Optional: what the caller knows about the file's release, as a named list
+with any of 'sha256', 'release' and 'repository'. Kept with the file's name and MD5 digest;
+see \code{\link{get.data.manager.provenance}}}
 }
 \description{
 Load a cached data manager

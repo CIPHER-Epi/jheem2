@@ -1,0 +1,105 @@
+# Releases jheem2 from dev. Run it from the Actions tab with the new version (for example 1.13.0).
+#
+# It releases dev's latest commit, only if that commit's checks (check.yml) passed:
+#   1. sets Version and Date in DESCRIPTION and regenerates the help pages;
+#   2. commits that to dev and tags it v<version>;
+#   3. builds the source package and attaches it, with SHA-256 checksums, to a GitHub Release whose
+#      notes list the pull requests merged since the last release;
+#   4. moves master, GitHub's default branch, to the release, so installing without a ref gets it;
+#   5. starts the next development version on dev (<version>.9000).
+# Nothing is pushed unless dev and the tag can both be updated.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, for example 1.13.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  checks: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Check the version and dev's checks
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "'$VERSION' is not a version like 1.13.0"
+          current="$(sed -n 's/^Version: *//p' DESCRIPTION)"
+          base="${current%.9000}"
+          newest="$(printf '%s\n%s\n' "$base" "$VERSION" | sort -V | tail -1)"
+          [ "$VERSION" != "$base" ] && [ "$newest" = "$VERSION" ] || fail "$VERSION must be newer than $base (dev is $current)"
+          ! git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null || fail "tag v$VERSION already exists"
+          sha="$(git rev-parse HEAD)"
+          results="$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs?per_page=100" \
+                       --jq '[.check_runs[] | select(.name | startswith("R CMD check") or . == "Help pages match the code") | .conclusion] | unique | join(",")')"
+          [ "$results" = "success" ] || fail "dev's checks on $sha are '${results:-missing}'; release only a commit whose checks passed"
+          echo "Releasing $VERSION from dev $sha (was $current)"
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: roxygen2@7.3.2
+
+      - name: Set the version, regenerate the help pages, commit and tag
+        run: |
+          set -euo pipefail
+          sed -i -e "s/^Version: .*/Version: $VERSION/" -e "s/^Date: .*/Date: $(date -u +%F)/" DESCRIPTION
+          Rscript -e 'roxygen2::roxygenise()'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add DESCRIPTION NAMESPACE man
+          git commit -m "Release jheem2 $VERSION"
+          git tag -a "v$VERSION" -m "jheem2 $VERSION"
+
+      - name: Build the source package
+        run: |
+          set -euo pipefail
+          R CMD build --no-manual .
+          sha256sum "jheem2_$VERSION.tar.gz" > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Push the release commit and tag
+        run: git push --atomic origin HEAD:refs/heads/dev "refs/tags/v$VERSION"
+
+      - name: Create the GitHub Release
+        run: |
+          set -euo pipefail
+          previous="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "v$VERSION^" 2>/dev/null || true)"
+          gh release create "v$VERSION" "jheem2_$VERSION.tar.gz" SHA256SUMS \
+            --title "jheem2 $VERSION" --verify-tag --generate-notes ${previous:+--notes-start-tag "$previous"}
+
+      - name: Move master to the release
+        run: git push origin "$(git rev-parse "v$VERSION^{commit}"):refs/heads/master"
+
+      - name: Start the next development version on dev
+        run: |
+          set -euo pipefail
+          sed -i -e "s/^Version: .*/Version: $VERSION.9000/" DESCRIPTION
+          git add DESCRIPTION
+          git commit -m "Start jheem2 $VERSION.9000"
+          git push origin HEAD:refs/heads/dev
