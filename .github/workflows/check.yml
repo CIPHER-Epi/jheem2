@@ -1,11 +1,13 @@
-# Checks jheem2 as a package on Linux, macOS and Windows on every push and pull request that
-# touches it: R CMD check, which also runs tests/*.R, and that NAMESPACE and the help pages match
+# Checks jheem2 as a package on Linux, macOS and Windows on every push to dev or master and every
+# pull request that touches it: R CMD check, which also runs tests/*.R, and that NAMESPACE and the help pages match
 # the roxygen comments in R/. An error in either fails the run; warnings and notes are reported in
 # the check log. Releases are cut only from commits whose checks passed (release.yml).
 name: Check
 
 on:
+  # Pushes to dev and master; other branches are checked through their pull requests.
   push:
+    branches: [dev, master]
     paths:
       - 'R/**'
       - 'src/**'
