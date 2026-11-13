@@ -7,7 +7,7 @@
 \title{jheem2: A package for setting up and running simulations using the JHEEM Engine
 #'}
 \description{
-The engine for the JHEEM (Johns Hopkins Epidemiological and Economic Model) family of compartmental models of HIV and STI transmission. Provides tools to specify versioned model structures, compile and run them as differential-equation simulations, manage surveillance data, map between data ontologies, define interventions, and calibrate models to data via likelihoods.
+The engine for the JHEEM (Joint HIV Epidemiology and Economic Model) family of compartmental models of HIV and STI transmission. Provides tools to specify versioned model structures, compile and run them as differential-equation simulations, manage surveillance data, map between data ontologies, define interventions, and calibrate models to data via likelihoods.
 }
 \section{jheem2 functions}{
 

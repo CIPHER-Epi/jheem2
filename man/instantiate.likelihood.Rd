@@ -18,7 +18,7 @@ instantiate.likelihood(
 \arguments{
 \item{instructions}{A 'jheem.likelihood.instructions' object}
 
-\item{data.manager}{A jheem.data.manager object. May be NULL for Bernoulli likelihood instructions.}
+\item{data.manager}{A jheem.data.manager object, or the name of one in the active data binding (see \code{\link{get.data.manager}}). May be NULL for Bernoulli likelihood instructions.}
 
 \item{verbose}{Should detailed messages be printed out as we go}
 
