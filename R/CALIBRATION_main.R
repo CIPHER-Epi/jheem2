@@ -9,6 +9,12 @@
 #'@param allow.overwrite.cache
 #'@param verbose
 #'
+#'@details The calibration's control saves the functions a chain calls. By default they keep
+#' everything this function built, including the calibration's data manager. With
+#' \code{options(jheem2.lean.calibration.controls = TRUE)} they keep only what a chain uses (the
+#' engine and the instantiated likelihood, which holds the data it pulled), and the data manager is
+#' kept only if it was not loaded from a release. Chains are the same either way.
+#'
 #'@export
 set.up.calibration <- function(version,
                                location,
@@ -597,7 +603,12 @@ set.up.calibration <- function(version,
     if (verbose)
         print(paste0(verbose.prefix, "Set up the MCMC control..."))
 
-    prior.density.function = distributions::get.density.function(relevant.prior.for.sampled.model.parameters, default.log = T)
+    # get.density.function() returns a function that keeps its arguments as unevaluated promises,
+    # and a promise keeps the environment it was made in. Make them in an environment holding only
+    # the prior, not this function's frame, which holds the calibration's data manager
+    prior.density.function = local(distributions::get.density.function(prior.for.density, default.log = T),
+                                   envir = list2env(list(prior.for.density = relevant.prior.for.sampled.model.parameters),
+                                                    parent = baseenv()))
     mcmc.prior = function(parameters){
         parameters.after.aliases = apply.calibration.parameter.aliases(sorted.parameter.aliases = sorted.parameter.aliases,
                                                                        non.aliased.parameter.names = non.aliased.model.parameter.names,
@@ -605,6 +616,24 @@ set.up.calibration <- function(version,
                                                                        sampled.values = parameters)
         
         prior.density.function(parameters.after.aliases)
+    }
+    
+    # The control saved below keeps these three functions and their environment, which is this
+    # function's frame and holds the calibration's data manager. With
+    # options(jheem2.lean.calibration.controls = TRUE) they keep only what a chain uses: the
+    # engine and the instantiated likelihood, which holds the data it pulled (see
+    # make.lean.calibration.environment)
+    if (isTRUE(getOption('jheem2.lean.calibration.controls', default = F)))
+    {
+        lean.environment = make.lean.calibration.environment(
+            frame = environment(),
+            names = c('likelihood', 'location', 'engine', 'all.initial.model.parameter.values',
+                      'initial.model.parameter.values', 'sorted.parameter.aliases',
+                      'non.aliased.model.parameter.names', 'prior.density.function'),
+            data.manager = calibration.data.manager)
+        environment(compute.likelihood) = lean.environment
+        environment(run.simulation) = lean.environment
+        environment(mcmc.prior) = lean.environment
     }
     
     ctrl = bayesian.simulations::create.adaptive.blockwise.metropolis.control(
@@ -682,6 +711,24 @@ set.up.calibration <- function(version,
 ##-------------------------------------------##
 ##-- PARSING CALIBRATION PARAMETER ALIASES --##
 ##-------------------------------------------##
+
+# The environment for the functions a calibration control saves, under
+# options(jheem2.lean.calibration.controls = TRUE): the named objects from 'frame', in an
+# environment with the frame's parent. A data manager without a release is kept too, since the
+# control is then the only kept copy of the data the calibration used.
+make.lean.calibration.environment <- function(frame, names, data.manager)
+{
+    lean.environment = new.env(parent = parent.env(frame))
+    for (name in names)
+        assign(name, get(name, envir = frame, inherits = F), envir = lean.environment)
+    if (!is.null(data.manager))
+    {
+        release = get.data.manager.provenance(data.manager)$release
+        if (is.null(release) || all(is.na(release)))
+            assign('data.manager.without.release', data.manager, envir = lean.environment)
+    }
+    lean.environment
+}
 
 apply.calibration.parameter.aliases <- function(sorted.parameter.aliases,
                                                 non.aliased.parameter.names,
