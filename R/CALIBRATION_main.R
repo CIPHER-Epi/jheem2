@@ -603,7 +603,12 @@ set.up.calibration <- function(version,
     if (verbose)
         print(paste0(verbose.prefix, "Set up the MCMC control..."))
 
-    prior.density.function = distributions::get.density.function(relevant.prior.for.sampled.model.parameters, default.log = T)
+    # get.density.function() returns a function that keeps its arguments as unevaluated promises,
+    # and a promise keeps the environment it was made in. Make them in an environment holding only
+    # the prior, not this function's frame, which holds the calibration's data manager
+    prior.density.function = local(distributions::get.density.function(prior.for.density, default.log = T),
+                                   envir = list2env(list(prior.for.density = relevant.prior.for.sampled.model.parameters),
+                                                    parent = baseenv()))
     mcmc.prior = function(parameters){
         parameters.after.aliases = apply.calibration.parameter.aliases(sorted.parameter.aliases = sorted.parameter.aliases,
                                                                        non.aliased.parameter.names = non.aliased.model.parameter.names,
