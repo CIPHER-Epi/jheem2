@@ -253,6 +253,49 @@ identity.columns = c("name", "release", "sha256", "md5")
 stopifnot(identical(get.data.binding.identity(rebuilt)[, identity.columns],
                     get.data.binding.identity(binding.a)[, identity.columns]),
           identical(mortality.rate(using.data.binding(rebuilt, run.toy())), 0.01))
+
+#-- Reruns and later calibration stages compare with the recorded binding --#
+warned = function(expr)
+{
+    messages = character()
+    value = withCallingHandlers(expr, warning = function(w){
+        messages <<- c(messages, conditionMessage(w))
+        invokeRestart("muffleWarning")
+    })
+    list(value = value, warnings = messages)
+}
+differences = jheem2:::data.binding.differences(binding.b, record.a)
+stopifnot(identical(differences$name, "census"),
+          identical(differences$recorded, "census-a (sha256 aaaaaaaaaaaa)"),
+          identical(differences$current, "census-b (sha256 bbbbbbbbbbbb)"),
+          nrow(jheem2:::data.binding.differences(binding.a, record.a)) == 0,
+          nrow(jheem2:::data.binding.differences(binding.b, unbound.record)) == 0)
+# By default a rerun builds under the active binding, and names what differs from the record
+rerun = using.data.binding(binding.b, warned(rerun.simulations(sim.a, verbose = F)))
+stopifnot(identical(mortality.rate(rerun$value), 0.05),
+          length(rerun$warnings) == 1,
+          grepl("census (built with census-a (sha256 aaaaaaaaaaaa); now census-b", rerun$warnings, fixed = TRUE))
+# A binding passed to it is used, with no warning
+rerun = using.data.binding(binding.b, warned(rerun.simulations(sim.a, verbose = F, data.binding = binding.a)))
+stopifnot(identical(mortality.rate(rerun$value), 0.01), length(rerun$warnings) == 0)
+# With the option, the recorded binding is rebuilt through the release resolver
+options(jheem2.rebuild.recorded.data.binding = TRUE)
+rerun = using.data.binding(binding.b, warned(rerun.simulations(sim.a, verbose = F)))
+options(jheem2.rebuild.recorded.data.binding = NULL)
+stopifnot(identical(mortality.rate(rerun$value), 0.01), length(rerun$warnings) == 0)
+# A simulation set built without a binding reruns as before
+rerun = using.data.binding(binding.b, warned(rerun.simulations(unbound.sim, verbose = F)))
+stopifnot(identical(mortality.rate(rerun$value), 0.05), length(rerun$warnings) == 0)
+expect.error(rerun.simulations(sim.a, verbose = F, data.binding = list()), "must be a 'jheem.data.binding' object")
+# A calibration set up with different data from a preceding calibration's is reported by name
+stage0.dir = file.path(tempdir(), "calibration.stage0")
+dir.create(stage0.dir)
+jheem2:::write.data.inputs.dcf(record.a, dir = stage0.dir)
+checked = warned(jheem2:::check.preceding.data.inputs("stage1", list(stage0 = stage0.dir), binding.b))
+stopifnot(length(checked$warnings) == 1,
+          grepl("preceding calibration 'stage0': census (stage0 used census-a", checked$warnings, fixed = TRUE),
+          length(warned(jheem2:::check.preceding.data.inputs("stage1", list(stage0 = stage0.dir), binding.a))$warnings) == 0,
+          length(warned(jheem2:::check.preceding.data.inputs("stage1", list(stage0 = tempfile()), binding.b))$warnings) == 0)
 set.data.release.resolver(function(identity) load.release(census.b.file, identity$release, identity$sha256))
 expect.error(rebuild.data.binding(sim.a), "the data manager loaded for 'census' has md5")
 expect.error(rebuild.data.binding(unbound.sim), "no data binding was recorded")

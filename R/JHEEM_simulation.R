@@ -97,6 +97,11 @@ get.simulation.metadata <- function(version,
 #'@param verbose Whether to print updates as simulations are run
 #'@param sub.version The sub-version to run
 #'@param from.year,to.year The years to keep in the simulation object
+#'@param data.binding A 'jheem.data.binding' to build the model under (see \code{\link{create.data.binding}}), for
+#' example \code{rebuild.data.binding(simset)} to use the data the simulation set was built with. If NULL, the
+#' model is built under the active binding, with a warning if it differs from the one the simulation set recorded;
+#' with \code{options(jheem2.rebuild.recorded.data.binding = TRUE)}, under the recorded binding, rebuilt through
+#' the release resolver
 #'
 #'@details Helpful if the specification has changed
 #'
@@ -106,18 +111,22 @@ rerun.simulations <- function(simset,
                               sub.version = simset$sub.version,
                               from.year = simset$from.year,
                               to.year = simset$to.year,
-                              verbose=T)
+                              verbose=T,
+                              data.binding = NULL)
 {
     if (!is(simset, 'jheem.simulation.set'))
         stop("Cannot rerun.simulations: simset must be an object of class 'jheem.simulation.set'")
+    data.binding = data.binding.for.rerun(simset, data.binding, what = "rerun.simulations()",
+                                          error.prefix = "Cannot rerun.simulations: ")
     
     specification = get.compiled.specification.for.version(simset$version)
 
     if (verbose)
         cat("Creating engine to re-run simulations...")
     
-    jheem.kernel = create.jheem.kernel(version = simset$version,
-                                       location = simset$location)
+    build.kernel = function() create.jheem.kernel(version = simset$version,
+                                                  location = simset$location)
+    jheem.kernel = if (is.null(data.binding)) build.kernel() else using.data.binding(data.binding, build.kernel())
     
     engine = do.create.jheem.engine(jheem.kernel = jheem.kernel,
                                     sub.version = sub.version,
@@ -149,7 +158,10 @@ rerun.simulations <- function(simset,
                 "...", sep='')
         }
         
-        sim = engine$run(parameters = simset$parameters[,i])
+        parameters = simset$parameters[,i]
+        if (length(parameters) == 0) # a model with no parameters: the engine still needs a named vector
+            parameters = setNames(numeric(0), character(0))
+        sim = engine$run(parameters = parameters)
         
         if (verbose && (i%%update.every==0 || i==simset$n.sim))
             cat("done\n")
