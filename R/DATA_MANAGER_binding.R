@@ -13,6 +13,10 @@
 #
 # With no binding set, nothing changes: get.data.manager() reads the registry and records keep
 # the coverage they had before bindings existed.
+#
+# rerun.simulations() builds under a binding passed to it; otherwise it warns when the active binding differs from
+# the one the simulation set recorded, or, with options(jheem2.rebuild.recorded.data.binding = TRUE), rebuilds the
+# recorded binding. Setting up a calibration warns when its binding differs from a preceding calibration's.
 
 # Keep the session's state when this file is sourced again.
 if (!exists('DATA.BINDING.STATE'))
@@ -330,6 +334,98 @@ print.jheem.data.binding <- function(x, ...)
 ##-----------------------##
 ##-- INTERNAL HELPERS --##
 ##-----------------------##
+
+# Where 'binding' differs from the binding an artifact recorded, for the names its build used (or all its bound
+# names, if the record doesn't say). One row per differing name: name, recorded and current, each a release (or
+# file) with the start of its digest, or "not bound". No rows if they agree, or if nothing bound was recorded.
+data.binding.differences <- function(binding, record)
+{
+    none = data.frame(name = character(), recorded = character(), current = character(), stringsAsFactors = F)
+    rows = record$data.managers
+    if (is.null(rows) || is.null(rows$bound.as))
+        return (none)
+    rows = rows[!is.na(rows$bound.as) & !(rows$used %in% FALSE), , drop = F]
+    current = if (is.null(binding)) NULL else get.data.binding.identity(binding)
+    describe = function(release, file, sha256, md5)
+    {
+        what = if (!is.na(release)) release else if (!is.na(file)) paste0(file, " (no release)") else "a data manager not loaded from a file"
+        digest = if (!is.na(sha256)) paste0("sha256 ", substr(sha256, 1, 12)) else if (!is.na(md5)) paste0("md5 ", substr(md5, 1, 12))
+        if (is.null(digest)) what else paste0(what, " (", digest, ")")
+    }
+    differences = list()
+    for (i in seq_len(nrow(rows)))
+    {
+        recorded = describe(rows$release[i], rows$file[i], rows$sha256[i], rows$md5[i])
+        for (name in strsplit(rows$bound.as[i], ', ', fixed = T)[[1]])
+        {
+            j = if (is.null(current)) integer(0) else which(current$name == name)
+            if (length(j) == 0)
+                now = "not bound"
+            else
+            {
+                same = if (!is.na(rows$sha256[i]) && !is.na(current$sha256[j])) identical(rows$sha256[i], current$sha256[j])
+                       else if (!is.na(rows$md5[i]) && !is.na(current$md5[j])) identical(rows$md5[i], current$md5[j])
+                       else identical(rows$release[i], current$release[j])
+                if (same)
+                    next
+                now = describe(current$release[j], current$file[j], current$sha256[j], current$md5[j])
+            }
+            differences[[length(differences) + 1]] = data.frame(name = name, recorded = recorded, current = now,
+                                                                stringsAsFactors = F)
+        }
+    }
+    if (length(differences) == 0) none else do.call(rbind, differences)
+}
+
+# The binding a rerun builds its kernel under: 'data.binding' if given; otherwise, with
+# options(jheem2.rebuild.recorded.data.binding = TRUE), the binding 'artifact' recorded, rebuilt through the
+# release resolver; otherwise NULL, so the rerun uses the active binding as before, after a warning naming any
+# data manager that differs from the record.
+data.binding.for.rerun <- function(artifact, data.binding, what, error.prefix)
+{
+    if (!is.null(data.binding))
+    {
+        check.data.binding(data.binding, error.prefix)
+        return (data.binding)
+    }
+    record = get.data.inputs(artifact)
+    if (is.null(record) || !('bound' %in% record$coverage))
+        return (NULL)
+    if (isTRUE(getOption('jheem2.rebuild.recorded.data.binding', default = F)))
+        return (rebuild.data.binding(record))
+    differences = data.binding.differences(get.data.binding(), record)
+    if (nrow(differences) > 0)
+        warning(paste0(what, " uses the data managers in the active binding, which differ from those the simulation set ",
+                       "was built with: ",
+                       paste0(differences$name, " (built with ", differences$recorded, "; now ", differences$current, ")",
+                              collapse = "; "),
+                       ". To use the recorded data, pass data.binding = rebuild.data.binding(simset), or set ",
+                       "options(jheem2.rebuild.recorded.data.binding = TRUE)."),
+                call. = F)
+    NULL
+}
+
+# Warns, by name, where the binding a calibration is set up under differs from the binding a preceding calibration
+# recorded in its data_inputs.dcf: a change of data belongs to a new calibration code. Preceding calibrations with no
+# recorded binding are skipped. 'preceding.dirs' is named by calibration code.
+check.preceding.data.inputs <- function(calibration.code, preceding.dirs, binding)
+{
+    for (code in names(preceding.dirs))
+    {
+        record = get.data.inputs(preceding.dirs[[code]])
+        if (is.null(record) || !('bound' %in% record$coverage))
+            next
+        differences = data.binding.differences(binding, record)
+        if (nrow(differences) > 0)
+            warning(paste0("Calibration '", calibration.code, "' is set up with different data from its preceding ",
+                           "calibration '", code, "': ",
+                           paste0(differences$name, " (", code, " used ", differences$recorded, "; now ",
+                                  differences$current, ")", collapse = "; "),
+                           ". A change of data belongs to a new calibration code."),
+                    call. = F)
+    }
+    invisible(NULL)
+}
 
 check.data.binding <- function(binding, error.prefix)
 {

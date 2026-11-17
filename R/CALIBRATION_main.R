@@ -267,6 +267,16 @@ set.up.calibration <- function(version,
     else
         version.for.preceding = version
     
+    # A change of data from a preceding calibration belongs to a new calibration code (see DATA_MANAGER_binding.R).
+    # Checked before the model is built, so the warning comes first if the new data then fail to build it.
+    preceding.codes = calibration.info$preceding.calibration.codes
+    check.preceding.data.inputs(calibration.code = calibration.code,
+                                preceding.dirs = setNames(lapply(preceding.codes, function(code){
+                                    get.calibration.dir(version = version.for.preceding, location = location,
+                                                        calibration.code = code, root.dir = root.dir)
+                                }), preceding.codes),
+                                binding = get.data.binding())
+    
     while (preceding.index <= length(dynamic.preceding.codes))
     {
         preceding.code = dynamic.preceding.codes[preceding.index]

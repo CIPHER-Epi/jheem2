@@ -10,7 +10,8 @@ rerun.simulations(
   sub.version = simset$sub.version,
   from.year = simset$from.year,
   to.year = simset$to.year,
-  verbose = T
+  verbose = T,
+  data.binding = NULL
 )
 }
 \arguments{
@@ -23,6 +24,12 @@ rerun.simulations(
 \item{from.year, to.year}{The years to keep in the simulation object}
 
 \item{verbose}{Whether to print updates as simulations are run}
+
+\item{data.binding}{A 'jheem.data.binding' to build the model under (see \code{\link{create.data.binding}}), for
+example \code{rebuild.data.binding(simset)} to use the data the simulation set was built with. If NULL, the
+model is built under the active binding, with a warning if it differs from the one the simulation set recorded;
+with \code{options(jheem2.rebuild.recorded.data.binding = TRUE)}, under the recorded binding, rebuilt through
+the release resolver}
 }
 \description{
 Rerun a Simulation Set
