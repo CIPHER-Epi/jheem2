@@ -173,6 +173,9 @@ stopifnot(identical(get.data.binding()$managers$census, census.b),
 session.sim = run.toy()
 stopifnot(identical(mortality.rate(session.sim), 0.05),
           identical(get.data.inputs(session.sim)$coverage, c("declared", "loaded", "bound")))
+printed = capture.output(print(get.data.inputs(session.sim)))
+stopifnot(identical(printed[2], "Coverage: declared, loaded, bound (built under a data binding)"),
+          any(grepl("^ *census +.* used *$", printed)))
 # A binding made active for an expression takes precedence, and the session binding returns after
 stopifnot(identical(mortality.rate(using.data.binding(binding.a, run.toy())), 0.01),
           identical(get.data.manager("census"), census.b))
