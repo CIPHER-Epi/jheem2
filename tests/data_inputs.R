@@ -110,6 +110,13 @@ Sys.unsetenv("JHEEM_RUN_RECORD")
 stopifnot(identical(record$coverage, c("declared", "loaded")),
           identical(record$run.record, "/records/C.12580/calib.test"),
           identical(record, get.data.inputs(sim$jheem.kernel)))
+# Records print one line per data manager: its name, release (or file) and digest
+printed = capture.output(print(record))
+stopifnot(inherits(record, "jheem.data.inputs"),
+          identical(printed[2], "Coverage: declared, loaded"),
+          any(grepl("^ *census +census-manager-v2026.10.08 +(sha256|md5) ", printed)),
+          any(grepl("syphilis.manager.rdata (no release)", printed, fixed = TRUE)),
+          identical(printed[length(printed)], "Run record: /records/C.12580/calib.test"))
 managers = record$data.managers
 stopifnot(identical(managers$registered.as, c("census", "syphilis", NA)),
           identical(managers$default, c(FALSE, TRUE, FALSE)),

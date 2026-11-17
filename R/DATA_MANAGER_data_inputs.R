@@ -68,8 +68,8 @@ get.data.inputs <- function(x)
     if (missing(x))
     {
         binding = get.data.binding()
-        return (make.data.inputs.record(data.binding.frame = if (is.null(binding)) NULL
-                                                            else list(binding = binding, used = character())))
+        return (as.data.inputs.record(make.data.inputs.record(
+            data.binding.frame = if (is.null(binding)) NULL else list(binding = binding, used = character()))))
     }
 
     if (is.character(x) && length(x) == 1 && !is.na(x))
@@ -77,7 +77,7 @@ get.data.inputs <- function(x)
         file = if (dir.exists(x)) file.path(x, DATA.INPUTS.FILE.NAME) else x
         if (!file.exists(file))
             return (NULL)
-        return (read.data.inputs.dcf(file, error.prefix = error.prefix))
+        return (as.data.inputs.record(read.data.inputs.dcf(file, error.prefix = error.prefix)))
     }
 
     if (R6::is.R6(x) && is(x, 'jheem.simulation.set'))
@@ -89,7 +89,51 @@ get.data.inputs <- function(x)
     private = x$.__enclos_env__$private
     if (is.null(private) || !exists('i.data.inputs', envir = private, inherits = F))
         return (NULL)
-    private$i.data.inputs
+    as.data.inputs.record(private$i.data.inputs)
+}
+
+#'@title Print a data-inputs record
+#'
+#'@description Prints when the record was made, its coverage, and one line per data manager: the
+#' name it was bound or registered under, its release (or file, for a data manager loaded without
+#' a release), the first 12 characters of its SHA-256 (or MD5), and, for an artifact built under a
+#' data binding, whether the build used it. The full record is the list itself.
+#'
+#'@param x A record from \code{\link{get.data.inputs}}
+#'@param ... Not used
+#'
+#'@export
+print.jheem.data.inputs <- function(x, ...)
+{
+    managers = x$data.managers
+    bound = 'bound' %in% x$coverage
+    cat("Data inputs recorded ", format(x$recorded.at, '%Y-%m-%d %H:%M:%S %Z'), "\n", sep = '')
+    cat("Coverage: ", paste(x$coverage, collapse = ', '),
+        if (bound) " (built under a data binding)", "\n", sep = '')
+    if (!is.null(managers) && nrow(managers) > 0)
+    {
+        name = if (bound) managers$bound.as else managers$registered.as
+        if (!bound)
+            name[is.na(name) & managers$default] = '(default)'
+        digest = ifelse(!is.na(managers$sha256), paste0('sha256 ', substr(managers$sha256, 1, 12)),
+                        ifelse(!is.na(managers$md5), paste0('md5 ', substr(managers$md5, 1, 12)), 'no digest'))
+        rows = data.frame(name = ifelse(is.na(name), '', name),
+                          release = ifelse(!is.na(managers$release), managers$release,
+                                           paste0(ifelse(is.na(managers$file), 'not from a file', managers$file),
+                                                  ' (no release)')),
+                          digest = digest,
+                          stringsAsFactors = F)
+        if (bound)
+            rows$used = ifelse(is.na(managers$used), '', ifelse(managers$used, 'used', 'not used'))
+        rows$changed = ifelse(managers$modified %in% TRUE, 'changed after loading', '')
+        if (all(rows$changed == ''))
+            rows$changed = NULL
+        names(rows)[1] = if (bound) 'bound as' else 'registered as'
+        print(rows, row.names = F, right = F)
+    }
+    if (!is.null(x$run.record))
+        cat("Run record: ", x$run.record, "\n", sep = '')
+    invisible(x)
 }
 
 ##-----------------------##
@@ -231,6 +275,14 @@ make.data.inputs.row <- function(registered.as, default, passed, data.manager.na
                modified = as.logical(modified),
                loaded.at = if (is.null(provenance$loaded.at)) as.POSIXct(NA) else provenance$loaded.at,
                stringsAsFactors = F)
+}
+
+# The record get.data.inputs() returns: the list, with a class for printing. NULL stays NULL.
+as.data.inputs.record <- function(record)
+{
+    if (is.null(record)) return (NULL)
+    class(record) = 'jheem.data.inputs'
+    record
 }
 
 # Records an artifact's data inputs in its private field, if its class has one.
